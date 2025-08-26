@@ -1,6 +1,6 @@
 # WARP Proposal
 
-## Introduction
+# Introduction
 
 Any time a person uses a computer to access information over the Worldwide Web, buy something from an online vendor, or perform some sort of productivity task (such as writing a document, using a shared calendar or creating a business document), they will, mostly likely, perform that task using a Web Browser.
 
@@ -36,9 +36,9 @@ Whilst all browsers operate their own local cache to avoid requesting a resource
 
 This might be because the URL pointing to a particular resource might use a dynamically generated path (or even file) name which changes between visits or between user sessions: yet the actual resource behind the request remains the same.
 
-## Motivation
+# Motivation
 
-### Problem Description
+## Problem Description
 
 If a user located in Singapore is interacting with a website hosted in a data centre on the US East Coast, they may experience a noticeable delay between clicking on a link and seeing the response in their browser.
 
@@ -47,7 +47,7 @@ Consequently, if two computers on opposite sides of the planet wish to talk to e
 
 Users will tolerate a certain amount of delay at certain points in the interaction sequence, but if that delay is either sufficiently frequent or becomes sufficiently large, then they will typically become frustrated and eventually stop using the website.
 
-### Proposed Benefits
+## Proposed Benefits
 
 This proposal aims to reduce the network round trip time by reducing the "_network distance_" between the client and server.
 So rather than the server being located deep within a network (with all the accompanying traffic delays needed for the request to get in and the response to get out), the request can be answered by a server located very close to, or even on, the "edge" of the network.
@@ -58,7 +58,7 @@ Software that implements this "edge-cache" functionality is part of the wider ca
 
 Wasmer Edge is the name of Wasmer's content delivery network (CDN) offering and this proposal aims to extend its functionality by adding CDN caching capability.
 
-### Impact
+## Impact
 
 From a technical perspective, to implement a correct, scalable and robust cache layer from scratch is a highly complex task requiring both specialist skills and an extended period of development time.
 
@@ -78,13 +78,15 @@ In order to make the Wasmer Edge product stand out, further usability features w
 
 But first things first&hellip;
 
-## Explanation
+# Explanation
 
-Explanation of the proposal.
+The following explanation is given with the caveat that the risks associated with the drawbacks listed below have been examined and ruled to be acceptable.
 
-This should be either short and broad for exploratory WARPs, or very detailed, depending on the context.
+## Provide an Implementation of the `pingora_cache::Storage` trait 
 
-## Drawbacks & Alternatives
+The `pingora_cache::Storage` trait provides a standardised interface to an underlying persistence layer of your choice.
+
+# Drawbacks & Alternatives
 
 The main downside of implementing this proposal is that although Cloudflare state that [Pingora is battle tested...](https://github.com/cloudflare/pingora?tab=readme-ov-file#what-is-pingora), they also explicitly state that [Pingora proxy integration with caching should be considered experimental](https://github.com/cloudflare/pingora?tab=readme-ov-file#notable-crates-in-this-workspace), and as such APIs related to caching are currently highly volatile.
 
@@ -99,9 +101,10 @@ These risks include, but are not limited to, building mission-critical functiona
 
 Wasmer could end up in a situation in which part of their mission-critical Wasmer Edge offering is dependent upon a version of `pingora-cache` that cannot be upgraded without significant effort or rework.
 
-### Alternatives
+## Alternatives
 
-***Commercial Products***<br>
+### Commercial Products
+
 [Numerous commercial CDN cache products](https://www.streamingmediablog.com/2023/01/cdn-list.html) are available, of which a tiny selection are listed here, all of which use some variation of volume-based pricing:
 
 * <https://bunny.net/pricing>
@@ -114,7 +117,8 @@ The chief risks of building edge-cache functionality on top of a paid-for produc
   * become a unavoidable running cost that cannot be reduced without significant effort  
 * In future, should it become necessary to detach Wasmer Edge from such third-party dependencies, then further development time and effort must be spent detaching from one cache solution and then transitioning to another cache solution - all without disrupting the existing functionality.
 
-***Open Source Alternatives***<br>
+### Open Source Alternatives
+
 It may be prudent therefore for Wasmer to consider some of the alternative OSS caching proxies solutions.
 These include:
 
