@@ -117,6 +117,7 @@ The chief risks of building edge-cache functionality on top of a paid-for produc
 Alternative OSS caching proxies are available that include:
 
 * [Varnish HTTP Cache](https://varnish-cache.org/)
+
    ✅ Widely used by key players such as Akamai and Fastly<br>
    ❌ Written in C not async Rust, so carries a set of interoperability challenges <sup id="a1">[1](#f1)</sup>
  
