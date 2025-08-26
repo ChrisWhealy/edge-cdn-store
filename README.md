@@ -91,7 +91,7 @@ The main downside of implementing this proposal is that although Cloudflare stat
 Looking through the `pingora-cache` repository, the `memory` module is specifically identified as [not being production ready](https://github.com/cloudflare/pingora/blob/b3c186177e8ff59f047ed05aa7b88735bb623c2f/pingora-cache/src/memory.rs#L17).
 Although none of the other modules contain such an explicit warning, this offers no guarantee that volatility will be confined simply to this one module.
 
-Given Cloudflare's warning, it should be considered a ***high risk*** venture to build software a foundation known to be volatile - especially if that software needs to be production-ready.
+Given Cloudflare's warning, for Wasmer to build some mission-critical software on a foundation known to be volatile should be considered ***high risk***.
 
 The risks of writing software on this foundation include:
 * Building critical functionality on top of a feature that is substantially altered or maybe even disappears
