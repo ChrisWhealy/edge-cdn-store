@@ -135,7 +135,7 @@ Alternative OSS caching proxies are available that include:
  
 * [SOZU Proxy](https://www.sozu.io/)
 
-   ✅ Written in async Rust with an always-on, hot-reload style architecture<br>
+   ✅ Written in async Rust with an Erlang-style always-on, hot-reload architecture<br>
    ❌ Not as mature and therefore not as battle-hardened
 
 ---
