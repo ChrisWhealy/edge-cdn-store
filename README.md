@@ -92,12 +92,11 @@ Looking through the `pingora-cache` repository, the `memory` module is specifica
 Although none of the other modules contain such an explicit warning, this offers no guarantee that volatility will be confined simply to this one module.
 
 Given Cloudflare's warning, for Wasmer to build some mission-critical software on a foundation known to be volatile should be considered ***high risk***.
+These risks include building critical functionality on top of a `pingora-cache` feature that:
+* is substantially altered or maybe even disappears
+* turns out to be inefficient or even buggy
 
-The risks of writing software on this foundation include:
-* Building critical functionality on top of a feature that is substantially altered or maybe even disappears
-* Building on top of functionality that turns out to be inefficient or even buggy
-
-This could potentially lead to a situation in which Wasmer is locked into the current version of `pingora-cache` because upgrading to a higher minor version introduces a breaking change.
+This could lead to a situation in which Wasmer is locked into the current version of `pingora-cache` because upgrading to a higher minor version introduces a breaking change.
 
 ### Alternatives
 
