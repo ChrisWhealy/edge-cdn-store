@@ -94,7 +94,7 @@ Although none of the other modules contain such an explicit warning, this offers
 Given Cloudflare's warning, for Wasmer to build mission-critical software on a foundation known to be volatile should be considered ***high risk***.
 
 These risks include, but are not limited to, building mission-critical functionality on top of a `pingora-cache` feature that:
-* is substantially altered or maybe even disappear as part of a future minor release; or
+* is substantially altered or even disappears as part of a future minor release; or
 * turns out to be inefficient or even buggy
 
 Wasmer could end up in a situation in which part of their mission-critical Wasmer Edge offering is dependent upon a version of `pingora-cache` that cannot be upgraded without significant effort or rework.
