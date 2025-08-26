@@ -102,23 +102,23 @@ Wasmer could end up in a situation in which part of their mission-critical Wasme
 ### Alternatives
 
 ***Commercial Products***<br>
-Commercial CDN cache products are also available, but each comes with some variation of request volume based pricing:
+Commercial CDN cache products are also available, but each comes with some variation of volume-based pricing:
 * <https://bunny.net/pricing>
 * <https://keycdn.com/pricing> (Focussed on Europe)
 * <https://www.cdn77.com/pricing>
 
 The chief risks of building edge-cache functionality on top of a paid-for product are these:
 * The ongoing costs payable to the third-party will
-  * increase as Wasmer's user base grows
-  * become a fixed running cost that cannot be reduced without significant effort  
-* In future, should it become necessary to detach the product from third-party dependencies, then further development time and effort must be spent detaching from one cache solution and then transitioning to another cache solution - all without disrupting the existing functionality.
+  * increase as Wasmer's user base (and therefore throughput) grows
+  * become a unavoidable running cost that cannot be reduced without significant effort  
+* In future, should it become necessary to detach Wasmer Edge from such third-party dependencies, then further development time and effort must be spent detaching from one cache solution and then transitioning to another cache solution - all without disrupting the existing functionality.
 
 ***Open Source Alternatives***<br>
 Alternative OSS caching proxies are available that include:
 
 * [Varnish HTTP Cache](https://varnish-cache.org/)
    - **Pros:**<br>Widely used by key players such as Akamai and Fastly
-   - **Cons:**<br>Written in C not async Rust
+   - **Cons:**<br>Written in C not async Rust, so interoperability is more involved and slightly less performant
  
 * [Apache Traffic Server](https://trafficserver.apache.org/)
 
@@ -127,8 +127,8 @@ Alternative OSS caching proxies are available that include:
  
 * [Nginx + `proxy_cache`](https://nginx.org/index.html)
 
-   - **Pros:**<br>Widely used and well known
-   - **Cons:**<br>The `proxy_cache` module offers only basic cache capability.
+   - **Pros:**<br>Both the free and paid-for versions are widely used and well known
+   - **Cons:**<br>The `proxy_cache` module available in the free version offers only basic cache capability.
 
      To get more advanced features that would differentiate Wasmer Edge as a product from other edge caches, the paid-for version would need to be used.  
  
