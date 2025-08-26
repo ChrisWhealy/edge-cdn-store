@@ -115,7 +115,7 @@ The chief risks of building edge-cache functionality on top of a paid-for produc
 * In future, should it become necessary to detach Wasmer Edge from such third-party dependencies, then further development time and effort must be spent detaching from one cache solution and then transitioning to another cache solution - all without disrupting the existing functionality.
 
 ***Open Source Alternatives***<br>
-It may be prudent for Wasmer to consider alternative OSS caching proxies solutions.
+It may be prudent therefore for Wasmer to consider some of the alternative OSS caching proxies solutions.
 These include:
 
 * [Varnish HTTP Cache](https://varnish-cache.org/)
