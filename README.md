@@ -139,14 +139,13 @@ Alternative OSS caching proxies are available that include:
 
 ---
 
-<b id="f1">1</b> Implementing Varnish from async Rust can be done, but the task comes with the following challenges:
-1. Varnish is a standalone process, so a Tokio proxy would need to:
-   * run it as a sidecar or a co-located process
-   * communicate with it using Varnish's API or Control Interface (CLI)
-2. Every time Rust hands off to Varnish, we depart from the async runtime and incur a context switch (blocking call?)
-3. Such context switches could lead to a performance degradation in the event of a high volume of short-lived calls
-4. In order to maintain consistent system, observability, Varnish's metrics (collected using `Varnishstat`) must be integrated with whatever tracing library Rust uses
-5. Increased operational burden due to having its own configuration and tuning requirements
-6. Implementing more fine-grained controls such as cache purge by header, or tenant isolation can be done, but the Rust proxy must interact with Varnish's CLI
+<b id="f1">1</b> Implementing Varnish from async Rust certainly can be done, but it comes with the following extra considerations:
+1. Varnish would probably need to be run as a sidecar per Wasmer Edge node.  This is more memory hungry, but keeps the implementation simpler.
+1. Varnish is controlled using either HTTP, its own API or its Control Interface (CLI).  This therefore incurs at least one extra network hop
+1. Rust calls to the Varnish API should be done using a separate thread pool (`tokio::task::spawn_blocking`)
+1. In order to maintain consistent observability, Varnish's metrics (collected using `Varnishstat`) would have to be integrated with whatever metrics pipeline the Rust application uses
+1. Increased operational burden due to Varnish having its own configuration, tuning and patching requirements
+1. Implementing more fine-grained controls such as cache purge by header, or tenant isolation can be done, but the Rust proxy must interact with Varnish's CLI
+1. Debugging will be harder because both the Rust and Varnish (C) sides of the functionality will need to be traced.
 
 [↩](#a1)
