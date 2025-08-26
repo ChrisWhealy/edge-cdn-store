@@ -102,7 +102,7 @@ Wasmer could end up in a situation in which part of their mission-critical Wasme
 ### Alternatives
 
 ***Commercial Products***<br>
-[Numerous commercial CDN cache products](https://www.streamingmediablog.com/2023/01/cdn-list.html) are available, a tiny selection of which are listed here and each of which uses some variation of volume-based pricing:
+[Numerous commercial CDN cache products](https://www.streamingmediablog.com/2023/01/cdn-list.html) are available, of which a tiny selection are listed here, all of which use some variation of volume-based pricing:
 * 
 * <https://bunny.net/pricing>
 * <https://keycdn.com/pricing> (Focussed on Europe)
