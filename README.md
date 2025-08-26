@@ -118,7 +118,7 @@ Alternative OSS caching proxies are available that include:
 
 * [Varnish HTTP Cache](https://varnish-cache.org/)
    - **Pros:**<br>Widely used by key players such as Akamai and Fastly
-   - **Cons:**<br>Written in C not async Rust, so interoperability is more involved and slightly less performant
+   - **Cons:**<br>Written in C not async Rust, so carries a set of interoperability challenges <sup id="a1">[1](#f1)</sup>
  
 * [Apache Traffic Server](https://trafficserver.apache.org/)
 
@@ -137,4 +137,16 @@ Alternative OSS caching proxies are available that include:
    - **Pros:**<br>Written in async Rust with an always-on, hot-reload style architecture
    - **Cons:**<br>Not as mature and therefore not as battle-hardened
 
-     To get more advanced features that would differentiate Wasmer Edge as a product from other edge caches, the paid-for version would need to be used.  
+---
+
+<b id="f1">1</b> Implementing Varnish from async Rust can be done, but the task comes with the following challenges:
+1. Varnish is a standalone process, so a Tokio proxy would need to:
+   * run it as a sidecar or a co-located process
+   * communicate with it using Varnish's API or Control Interface (CLI)
+2. Every time Rust hands off to Varnish, we depart from the async runtime and incur a context switch (blocking call?)
+3. Such context switches could lead to a performance degradation in the event of a high volume of short-lived calls
+4. In order to maintain consistent system, observability, Varnish's metrics (collected using `Varnishstat`) must be integrated with whatever tracing library Rust uses
+5. Increased operational burden due to having its own configuration and tuning requirements
+6. Implementing more fine-grained controls such as cache purge by header, or tenant isolation can be done, but the Rust proxy must interact with Varnish's CLI
+
+[↩](#a1)
