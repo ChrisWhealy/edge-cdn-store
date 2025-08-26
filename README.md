@@ -140,7 +140,7 @@ Alternative OSS caching proxies are available that include:
 
 ---
 
-<b id="f1">1</b>&nbsp;&nbsp;&nbsp; Implementing Varnish from async Rust certainly can be done, but it comes with the following extra considerations:
+<b id="f1">1</b>&nbsp;&nbsp; Implementing Varnish from async Rust certainly can be done, but it comes with the following extra considerations:
 1. Varnish would probably need to be run as a sidecar per Wasmer Edge node.  This is more memory hungry, but keeps the implementation simpler.
 1. Varnish is controlled using either HTTP, its own API or its Control Interface (CLI).  This therefore incurs at least one extra network hop
 1. Rust calls to the Varnish API should be done using a separate thread pool (`tokio::task::spawn_blocking`)
