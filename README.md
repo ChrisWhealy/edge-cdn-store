@@ -102,13 +102,14 @@ Wasmer could end up in a situation in which part of their mission-critical Wasme
 ### Alternatives
 
 ***Commercial Products***<br>
-Commercial CDN cache products are also available, but each comes with some variation of volume-based pricing:
+[Numerous commercial CDN cache products](https://www.streamingmediablog.com/2023/01/cdn-list.html) are available, a tiny selection of which are listed here and each of which uses some variation of volume-based pricing:
+* 
 * <https://bunny.net/pricing>
 * <https://keycdn.com/pricing> (Focussed on Europe)
 * <https://www.cdn77.com/pricing>
 
 The chief risks of building edge-cache functionality on top of a paid-for product are these:
-* The ongoing costs payable to the third-party will
+* The ongoing costs payable to a third party will
   * increase as Wasmer's user base (and therefore throughput) grows
   * become a unavoidable running cost that cannot be reduced without significant effort  
 * In future, should it become necessary to detach Wasmer Edge from such third-party dependencies, then further development time and effort must be spent detaching from one cache solution and then transitioning to another cache solution - all without disrupting the existing functionality.
