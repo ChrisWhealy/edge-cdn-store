@@ -7,7 +7,7 @@ Any time a person uses a computer to access information over the Worldwide Web, 
 However, the machine on which the Web Browser runs is frequently located at a large physical distance from the Web Server with which they are interacting.
 This in turns means that the data involved in each request/response cycle must travel through a potentially large number of network switches, routers and servers before completing its round trip.
 
-The fewer intermediate steps there are in this "_journey through the network_", the quicker the request/response cycle can be completed.
+It is therefore self-evident that the fewer intermediate steps there are in this "_journey through the network_", the quicker the request/response cycle can be completed.
 
 In simplistic terms, the request/response cycle between a Web Browser and a Web Server looks something like this:
 
@@ -16,7 +16,7 @@ sequenceDiagram
     participant Browser
     participant Web Server
     
-    Note over Browser, Web Server: User enters a website name
+    Note over Browser, Web Server: User enters a website address
     Browser->>Web Server: Hey website, send me your first page
     Web Server-->>Browser: OK, here you go
     
@@ -40,10 +40,10 @@ This is because the URL pointing to a particular resource might use a dynamicall
 
 ### Problem Description
 
-If a user located in Singapore is interacting with a website hosted in a data centre on the US East coast, they may well experience a noticeable delay between clicking on a link or pushing a button.
+If a user located in Singapore is interacting with a website hosted in a data centre on the US East Coast, they may experience a noticeable delay between clicking on a link or pushing a button.
 
 This delay is due simply to the fact that the Worldwide Web is exactly that - worldwide.
-Consequently, if two computers on opposite sides of the planet wish to talk to each other, their requests and responses must navigate a complex network topology, passing through a large number of intervening switches, routers and servers in order to complete a single round trip.
+Consequently, if two computers on opposite sides of the planet wish to talk to each other, their requests and responses must navigate a complex network topology and pass through a large number of intervening switches, routers and servers in order to complete a single round trip.
 
 Users will tolerate a certain amount of delay at certain points in the interaction sequence, but if that delay is either sufficiently frequent or becomes sufficiently large, they become frustrated and will stop using the website.
 
@@ -52,11 +52,11 @@ Users will tolerate a certain amount of delay at certain points in the interacti
 This proposal aims to reduce the network round trip time by reducing the "_network distance_" between the client and server.
 So rather than the server that answers the request being located deep within a network (with all the accompanying traffic delays needed for the request to get in and the response to get out), the request can be answered by a server located very close to, or even on, the "edge" of the network.
 
-So in the case of our user in Singapore, if this "edge-cache" software were installed on servers running in a local Singapore data centre, then they would experience much faster response times.
+So in the case of our user in Singapore, if this "edge-cache" software were installed on servers running in a local Singapore data centre, then they would experience much faster response times simply because the "_network distance_" between client and server is shorter.
 
 Software that implements this "edge-cache" functionality is part of the wider category of software forming what is called a Content Delivery Network (CDN). 
 
-Wasmer Edge is the name of Wasmer's content delivery network (CDN) offering and this proposal aims to add CDN caching support.
+Wasmer Edge is the name of Wasmer's content delivery network (CDN) offering and this proposal aims to extend its functionality by adding CDN caching capability.
 
 ### Impact
 
