@@ -117,25 +117,25 @@ The chief risks of building edge-cache functionality on top of a paid-for produc
 Alternative OSS caching proxies are available that include:
 
 * [Varnish HTTP Cache](https://varnish-cache.org/)
-   - ✅ Widely used by key players such as Akamai and Fastly
-   - ❌ Written in C not async Rust, so carries a set of interoperability challenges <sup id="a1">[1](#f1)</sup>
+   ✅ Widely used by key players such as Akamai and Fastly<br>
+   ❌ Written in C not async Rust, so carries a set of interoperability challenges <sup id="a1">[1](#f1)</sup>
  
 * [Apache Traffic Server](https://trafficserver.apache.org/)
 
-   - ✅ Offers large-scale distributed caching and advanced routing
-   - ❌ A large product with a steep learning curve
+   ✅ Offers large-scale distributed caching and advanced routing<br>
+   ❌ A large product with a steep learning curve
  
 * [Nginx + `proxy_cache`](https://nginx.org/index.html)
 
-   - ✅ Both the free and paid-for versions are widely used and well known
-   - ❌ The `proxy_cache` module available in the free version offers only basic cache capability.
+   ✅ Both the free and paid-for versions are widely used and well known<br>
+   ❌ The `proxy_cache` module available in the free version offers only basic cache capability.
 
      To get more advanced features that would differentiate Wasmer Edge as a product from other edge caches, the paid-for version would need to be used.  
  
 * [SOZU Proxy](https://www.sozu.io/)
 
-   - ✅ Written in async Rust with an always-on, hot-reload style architecture
-   - ❌ Not as mature and therefore not as battle-hardened
+   ✅ Written in async Rust with an always-on, hot-reload style architecture<br>
+   ❌ Not as mature and therefore not as battle-hardened
 
 ---
 
