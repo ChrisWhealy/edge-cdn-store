@@ -91,7 +91,7 @@ The main downside of implementing this proposal is that although Cloudflare stat
 Looking through the `pingora-cache` repository, the `memory` module is specifically identified as [not being production ready](https://github.com/cloudflare/pingora/blob/b3c186177e8ff59f047ed05aa7b88735bb623c2f/pingora-cache/src/memory.rs#L17).
 Although none of the other modules contain such an explicit warning, this offers no guarantee that volatility will be confined simply to this one module.
 
-Given Cloudflare's warning, for Wasmer to build some mission-critical software on a foundation known to be volatile should be considered ***high risk***.
+Given Cloudflare's warning, for Wasmer to build mission-critical software on a foundation known to be volatile should be considered ***high risk***.
 
 These risks include, but are not limited to, building mission-critical functionality on top of a `pingora-cache` feature that:
 * is substantially altered or maybe even disappear as part of a future minor release; or
@@ -114,7 +114,8 @@ The chief risks of building edge-cache functionality on top of a paid-for produc
 * In future, should it become necessary to detach Wasmer Edge from such third-party dependencies, then further development time and effort must be spent detaching from one cache solution and then transitioning to another cache solution - all without disrupting the existing functionality.
 
 ***Open Source Alternatives***<br>
-Alternative OSS caching proxies are available that include:
+It may be prudent for Wasmer to consider alternative OSS caching proxies solutions.
+These include:
 
 * [Varnish HTTP Cache](https://varnish-cache.org/)
 
