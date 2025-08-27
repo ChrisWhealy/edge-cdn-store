@@ -94,7 +94,7 @@ Looking through the `pingora-cache` repository, the `memory` module is specifica
 Although none of the other modules contain such an explicit warning, this offers no guarantee that volatility will be confined simply to the `memory` module.
 
 Given Cloudflare's warning, I would advise Wasmer to be cautious before building mission-critical software on a foundation known to be volatile.
-If these risk are known and have been considered acceptable, then the following possibilities must be accepted. Wasmer Edge may depend on functionality that:
+If these risk are known and have been considered acceptable, then the following possibilities must be accepted. Wasmer Edge may find itself depending on functionality that:
 * is substantially altered or even disappears as part of a future minor release; or
 * turns out to be inefficient or even buggy; or
 * makes the possibility of an upgrade difficult without significant effort or rework.
