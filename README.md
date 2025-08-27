@@ -61,12 +61,7 @@ Wasmer Edge is the name of Wasmer's content delivery network (CDN) offering and 
 ## Impact
 
 From a technical perspective, to implement a correct, scalable and robust cache layer from scratch is a highly complex task requiring both specialist skills and an extended period of development time.
-
-From an entirely pragmatic perspective, this is likely beyond the reach of a small company such as Wasmer - and even if a home-grown product were somehow to be built successfully, if that product could not demonstrate at least feature parity with existing CDN offerings, then its presence risks undermining customer confidence.
-
-Consequently, it makes sense for Wasmer to use Open Source Rust software delivered by a CDN specialist company such as Cloudflare as they have already done the technical "heavy lifting".
-
-Such an approach allows Wasmer to implement the required functionality at a lower cost and results in a much smaller operational burden.
+Consequently, it makes sense for Wasmer to use an Open Source Rust framework delivered by a company specialising in CDN software as they have expertise to perform the technical "heavy lifting".
 
 Cloudflare's Rust-based Pingora framework is a candidate here; specifically, the `pingora-proxy` and `pingora-cache` crates.
 
