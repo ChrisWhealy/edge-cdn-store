@@ -117,7 +117,7 @@ The chief risks of building edge-cache functionality on top of a paid-for produc
 
 ### Open Source Alternatives
 
-It may be prudent therefore for Wasmer to consider some of the alternative OSS caching proxies solutions.
+If they have not already done so, Wasmer would be prudent to consider some of the alternative OSS caching proxies solutions.
 These include:
 
 * [Varnish HTTP Cache](https://varnish-cache.org/)
