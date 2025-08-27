@@ -91,7 +91,7 @@ The `pingora_cache::Storage` trait provides a standardised interface to an under
 The main downside of implementing this proposal is that although Cloudflare state that [Pingora is battle tested...](https://github.com/cloudflare/pingora?tab=readme-ov-file#what-is-pingora), they also explicitly state that [Pingora proxy integration with caching should be considered experimental](https://github.com/cloudflare/pingora?tab=readme-ov-file#notable-crates-in-this-workspace), and as such APIs related to caching are currently highly volatile.
 
 Looking through the `pingora-cache` repository, the `memory` module is specifically identified as [not being production ready](https://github.com/cloudflare/pingora/blob/b3c186177e8ff59f047ed05aa7b88735bb623c2f/pingora-cache/src/memory.rs#L17).
-Although none of the other modules contain such an explicit warning, this offers no guarantee that volatility will be confined simply to this one module.
+Although none of the other modules contain such an explicit warning, this offers no guarantee that volatility will be confined simply to the `memory` module.
 
 Given Cloudflare's warning, I would advise Wasmer to be cautious before building mission-critical software on a foundation known to be volatile.
 If these risk are known and have been considered acceptable, then the following possibilities must be accepted. Wasmer Edge may depend on functionality that:
