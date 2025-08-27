@@ -52,11 +52,11 @@ Users will tolerate a certain amount of delay at certain points in the interacti
 This proposal aims to reduce the network round trip time by reducing the "_network distance_" between the client and server.
 So rather than the server being located deep within a network (with all the accompanying traffic delays needed for the request to get in and the response to get out), the request can be answered by a server located very close to, or even on, the "edge" of the network.
 
-So in the case of our user in Singapore, if this "edge-cache" software were installed on servers running in a local Singapore data centre, then they would experience much faster response times simply because the "_network distance_" between client and server is shorter.
+So in the case of our user in Singapore, if their requests are routed through servers running in a local Singapore data centre, and those servers are also running this "edge-cache" software, then the user would experience much faster response times simply because the "_network distance_" between the client and the server is shorter.
 
 Software that implements this "edge-cache" functionality is part of the wider category of software forming what is called a Content Delivery Network (CDN). 
 
-Wasmer Edge is the name of Wasmer's content delivery network (CDN) offering and this proposal aims to extend its functionality by adding CDN caching capability.
+Wasmer Edge is the name of Wasmer's CDN offering and this proposal aims to extend its functionality by adding CDN caching capability.
 
 ## Impact
 
