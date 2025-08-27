@@ -56,7 +56,7 @@ So in the case of our user in Singapore, if their requests are routed through se
 
 Software that implements this "edge-cache" functionality is part of the wider category of software forming what is called a Content Delivery Network (CDN). 
 
-Wasmer Edge is the name of Wasmer's CDN offering and this proposal aims to extend its functionality by adding CDN caching capability.
+Wasmer Edge is the name of Wasmer's CDN offering and this proposal aims to extend its functionality by adding edge-caching capability.
 
 ## Impact
 
