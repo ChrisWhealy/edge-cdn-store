@@ -148,7 +148,7 @@ These include:
 1. Varnish would probably need to be run as a sidecar per Wasmer Edge node.  This is more memory hungry, but keeps the implementation simpler.
 1. Varnish is controlled using either HTTP, its own API or its Control Interface (CLI).  This therefore incurs at least one extra network hop which in turn increases latency.
 1. Rust calls to the Varnish API should be done using a separate thread pool (`tokio::task::spawn_blocking`)
-1. In order to maintain consistent observability, Varnish's metrics (collected using `Varnishstat`) would have to be integrated with whatever metrics pipeline the Wasmer Edge uses
+1. In order to maintain consistent observability, Varnish's metrics (collected using `Varnishstat`) would have to be integrated with whatever metrics pipeline Wasmer Edge uses
 1. Increased operational burden due to Varnish having its own configuration, tuning and patching requirements
 1. Implementing more fine-grained controls such as cache purge by header, or tenant isolation can be done, but the Rust proxy can only do so via Varnish's CLI
 1. Debugging will be harder because both the Rust and Varnish (C) sides of the functionality will need to be traced.
