@@ -84,7 +84,7 @@ The following explanation is given with the caveat that the risks associated wit
 
 ## Provide an Implementation of the `pingora_cache::Storage` trait 
 
-The `pingora_cache::Storage` trait provides a standardised interface to an underlying persistence layer of your choice.
+TODO
 
 # Drawbacks & Alternatives
 
