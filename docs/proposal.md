@@ -79,7 +79,39 @@ The following explanation is given with the caveat that the risks associated wit
 
 ## Provide an Implementation of the `pingora_cache::Storage` trait
 
-TODO
+### Directory `disk_cache`
+
+This directory holds the `DiskCache` struct and its implementation.
+
+The `struct` itself contains only two members: a `PathBuf` pointing to the root folder of the disk cache and a reference counted instance of `CacheMetrics`.
+
+Within the implementation of `DiskCache`, the key functions are the ones that transform either a `CacheKey` or a `CompactCacheKey` into a path.
+This value is used to derive a location on disk where the cached content will be written.
+
+### Implementation of `pingora_cache::Storage` for `DiskCache`
+
+The cache is implemented as `struct DiskCache` that then implements the `pringora_cache::Storage` trait.
+
+The `main` function creates lazy static instance of the `DiskCache` called `DISK_Cache`, which is then used within the `TIERED` cache object.
+(Currently, there is only one cache, but the `TEIRED` object allows for there to be a secondary, remote cache to act as a fallback if the we get a miss on a local cache lookup)
+
+After this, a proxy is created that implements `pingora_proxy::ProxyHttp`.
+Within this proxy is an implementation of the `request_cache_filter` function.
+This function is called when the proxy receives an incoming request for an object, and it is within this function that the decision is made to enable (or not) a particular cache for the current session. 
+
+Assuming a cache is enabled for this session (this PoC only has `DISK_CACHE` available), the Pingora Framework then calls the `DiskCache::lookup()` function for the requested resource.
+
+Our implementation of this function then determines whether the file is present in the disk cache.
+The first request for a resource will always return `None` because we have not yet obtained this object; but a cache hit returns an object that implements `pingora_cache::Storage::HandleHit`.
+
+If the Pingora framework receives `None` from a lookup, it then calls our implementation of the `DiskCache::get_miss_handler` function to obtain an object that implements `HandleMiss` 
+
+Either way, hits are handled by a `HitHandler` and misses by a `MissHandler`
+
+As hits, misses, purge attempts and evictions on cached objects happen, the appropriate metrics are recorded and made available through the cache inspection enpoint running on http://localhost:8080/matrics.
+This information is made available in a form that can be consumed by Prometheus.
+
+<--- INCOMPLETE ---> 
 
 # Drawbacks & Alternatives
 
