@@ -65,4 +65,4 @@ All JetBrains IDEs (including RustRover) start a process called `cef_server` tha
 Unfortunately, this service binds to port 6188, which is also the default HTTPS port used by the Pingora Framework.
 
 This means that if you have RustRover running at the same time as you start the cache server, the server might be unable to bind port 6188.
-If it is unsuccessful after a certain number of retires, it will panic.
+If the Pingora Proxy is unsuccessful after a certain number of retries, it panics and gives up.
