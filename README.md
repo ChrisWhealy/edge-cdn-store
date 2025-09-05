@@ -21,9 +21,7 @@ This starts three endpoints:
    - `http://localhost:8080/metrics` proxy metrics compatible with Prometheus  
    - `http://localhost:8080/cache` proxy cache contents (very basic, but functional)
 
-you will need to issue a `curl` command to the appropriate endpoint depending on whether you're accessing a secure or insecure address.
-
-Depending on whether you want to connect to From a separate terminal, such as:
+You will need to issue a `curl` command to the appropriate endpoint depending on whether you're accessing a secure or insecure address.
 
 ### Secure
 
