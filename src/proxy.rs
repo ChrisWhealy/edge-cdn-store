@@ -1,11 +1,14 @@
-use crate::{disk_cache::inspector::trace_fn_exit, DISK_CACHE};
+use crate::{disk_cache::inspector::trace_fn_exit, EVICT, TIERED};
 
 use async_trait::async_trait;
 use pingora::{
     http::ResponseHeader,
     prelude::{ProxyHttp, Session},
 };
-use pingora_cache::{storage::HandleHit, CacheKey, CacheMeta, ForcedInvalidationKind, NoCacheReason, RespCacheable};
+use pingora_cache::{
+     storage::HandleHit, CacheKey, CacheMeta, ForcedInvalidationKind, NoCacheReason,
+    RespCacheable,
+};
 use pingora_core::prelude::HttpPeer;
 use pingora_error::{Error, ErrorType};
 use std::time::{Duration, SystemTime};
@@ -100,7 +103,7 @@ impl ProxyHttp for MyProxy {
         let host_hdr = match session.req_header().headers.get("Host").and_then(|h| h.to_str().ok()) {
             Some(h) => h,
             None => {
-                return pingora_error::Error::e_explain(ErrorType::ConnectError, "Host header missing from request");
+                return Error::e_explain(ErrorType::ConnectError, "Host header missing from request");
             },
         };
 
@@ -160,8 +163,7 @@ impl ProxyHttp for MyProxy {
 
         // Cache must remain disabled for self-referencing requests
         if !self.self_addresses.iter().any(|addr| *addr == host) {
-            let storage: &'static (dyn pingora_cache::storage::Storage + Sync) = *DISK_CACHE;
-            session.cache.enable(storage, None, None, None, None);
+            session.cache.enable(*TIERED, Some(*EVICT), None, None, None);
             tracing::debug!("     Disk cache enabled");
         }
 
@@ -186,8 +188,8 @@ impl ProxyHttp for MyProxy {
             Err(parse_err) => {
                 tracing::debug!("    {parse_err}");
                 tracing::debug!("<--- {fn_name}");
-                return Err(parse_err)
-            }
+                return Err(parse_err);
+            },
         };
 
         let host_lc = host_only.to_ascii_lowercase();

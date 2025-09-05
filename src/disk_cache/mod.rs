@@ -1,15 +1,16 @@
-mod handlers;
+mod handle_hit;
+mod handle_miss;
 pub mod inspector;
 
 use crate::{
     disk_cache::{
-        handlers::{DiskHitHandler, DiskMissHandler},
-        inspector::format_cache_key,
+        handle_hit::DiskHitHandler,
+        handle_miss::DiskMissHandler,
+        inspector::{format_cache_key, trace_fn_exit_with_err},
     },
     metrics::CacheMetrics,
 };
 
-use crate::disk_cache::inspector::trace_fn_exit_with_err;
 use async_trait::async_trait;
 use pingora_cache::{
     key::{CacheHashKey, CompactCacheKey},
@@ -121,6 +122,7 @@ impl Storage for DiskCache {
         )
     }
 
+    // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
     async fn get_miss_handler(
         &'static self,
         key: &CacheKey,
@@ -157,6 +159,7 @@ impl Storage for DiskCache {
         Ok(Box::new(disk_miss_handler))
     }
 
+    // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
     async fn purge(
         &'static self,
         key: &CompactCacheKey,
@@ -165,29 +168,35 @@ impl Storage for DiskCache {
     ) -> pingora_error::Result<bool> {
         let fn_name = "DiskCache::purge()";
         tracing::debug!("---> {fn_name}");
+
         self.metrics.purge_attempts.inc();
 
         let (_hash, dir, body_path, meta_path, hdr_path) = self.path_from_compact_key(key);
-        let mut existed = false;
+        let body_bytes = if let Ok(md) = tokio::fs::metadata(&body_path).await { md.len() } else { 0u64 };
 
-        tracing::debug!("     removing body");
-        if std::fs::remove_file(&body_path).is_ok() {
-            existed = true;
-        }
+        let existed = match tokio::fs::remove_file(&body_path).await {
+            Ok(()) => {
+                tracing::debug!("     Purged {body_bytes} bytes");
+                self.metrics.evictions.inc();
+                self.metrics.evicted_bytes.inc_by(body_bytes);
+                self.metrics.size_bytes.sub(body_bytes as i64);
+                true
+            },
+            // Might need to do something else here...
+            Err(e) if e.kind() == std::io::ErrorKind::NotFound => false,
+            // Strictly speaking, setting existed = false here might not be correct
+            Err(_) => false,
+        };
 
-        tracing::debug!("     removing meta");
         let _ = std::fs::remove_file(&meta_path);
-        tracing::debug!("     removing hdr");
         let _ = std::fs::remove_file(&hdr_path);
-
-        // Try to remove the per-hash dir; ignore errors if not empty due to races.
-        tracing::debug!("     removing dir");
-        let _ = std::fs::remove_dir(&dir);
+        let _ = std::fs::remove_dir(&dir); // Ignore possible error due to races with above fs_remove() calls
 
         tracing::debug!("<--- {fn_name}");
         Ok(existed)
     }
 
+    // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
     async fn update_meta(
         &'static self,
         key: &CacheKey,
@@ -206,20 +215,12 @@ impl Storage for DiskCache {
 
             tracing::debug!("     updating meta");
             if let Err(e) = fs::write(&meta_path, &meta_internal).await {
-                return trace_fn_exit_with_err(
-                    fn_name,
-                    &format!("failed to update meta: {e}"),
-                    false,
-                );
+                return trace_fn_exit_with_err(fn_name, &format!("failed to update meta: {e}"), false);
             }
 
             tracing::debug!("     updating hdr");
             if let Err(e) = fs::write(&hdr_path, &meta_header).await {
-                return trace_fn_exit_with_err(
-                    fn_name,
-                    &format!("failed to update hdr: {e}"),
-                    false,
-                );
+                return trace_fn_exit_with_err(fn_name, &format!("failed to update hdr: {e}"), false);
             }
 
             true
@@ -232,6 +233,7 @@ impl Storage for DiskCache {
         Ok(exists)
     }
 
+    // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
     fn as_any(&self) -> &(dyn Any + Send + Sync + 'static) {
         self
     }

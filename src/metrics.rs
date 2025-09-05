@@ -8,6 +8,7 @@ pub struct CacheMetrics {
     pub inserts: IntCounter,
     pub purge_attempts: IntCounter,
     pub evictions: IntCounter,
+    pub evicted_bytes: IntCounter,
     pub size_bytes: IntGauge,
 }
 
@@ -20,6 +21,7 @@ impl CacheMetrics {
             inserts: register_int_counter!("cache_inserts", "Cache insertions").unwrap(),
             purge_attempts: register_int_counter!("purge_attempts", "Purge attempts").unwrap(),
             evictions: register_int_counter!("cache_evictions", "Successful cache evictions").unwrap(),
+            evicted_bytes: register_int_counter!("evicted_bytes", "Total bytes evicted").unwrap(),
             size_bytes: register_int_gauge!("cache_size_bytes", "Current cache size in bytes").unwrap(),
         }
     }

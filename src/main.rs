@@ -1,37 +1,71 @@
 mod disk_cache;
 mod metrics;
 mod proxy;
+mod tiered;
 
 use crate::{
     disk_cache::{inspector::start_disk_cache_inspector, DiskCache},
     proxy::MyProxy,
+    tiered::{TieredStorage, WritePolicy},
 };
 
 use once_cell::sync::Lazy;
 use pingora::prelude::*;
-use std::error::Error;
+use pingora_cache::eviction::simple_lru::Manager as LruManager;
+use std::{error::Error, str::FromStr};
 use tracing_subscriber::EnvFilter;
 
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 static DEFAULT_PROXY_HTTP_PORT: &'static [u16] = &[6188];
 static DEFAULT_PROXY_HTTPS_PORT: &'static [u16] = &[6143];
-
-// Leak a global static reference, required by `HttpCache::enable`
-static DISK_CACHE: Lazy<&'static DiskCache> = Lazy::new(|| Box::leak(Box::new(DiskCache::new("./.cache"))));
+static DEFAULT_CACHE_SIZE_BYTES: &'static usize = &(2 * 1024 * 1024 * 1024); // Default cache size = 2Gb
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-fn env_var_or_u16(var_name: &str, u16_default: u16) -> u16 {
-    if let Ok(val) = std::env::var(var_name) {
-        val.trim().parse::<u16>().unwrap_or(u16_default)
-    } else {
-        u16_default
-    }
+// Define cache and eviction policy
+static DISK_CACHE: Lazy<&'static DiskCache> = Lazy::new(|| Box::leak(Box::new(DiskCache::new("./.cache"))));
+
+// TODO Implement some sort of remote cache
+// static REMOTE: Lazy<&'static RemoteCache> = Lazy::new(|| Box::leak(Box::new(RemoteCache::new())));
+
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+// Remote cache to be wired in later
+pub static TIERED: Lazy<&'static TieredStorage> = Lazy::new(|| {
+    Box::leak(Box::new(TieredStorage::new(
+        *DISK_CACHE,
+        None,
+        // Some(*REMOTE),         // Need to implement this
+        WritePolicy::PrimaryOnly, // Switches to WriteThroughBoth when remote is available
+    )))
+});
+
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+// Define eviction policy - just using LRU at the moment
+pub struct EvictCfg {
+    pub max_bytes: usize,
+}
+pub static EVICT_CFG: Lazy<EvictCfg> = Lazy::new(|| EvictCfg {
+    max_bytes: env_var_or("CACHE_SIZE_BYTES", *DEFAULT_CACHE_SIZE_BYTES),
+});
+pub static EVICT: Lazy<&'static LruManager> = Lazy::new(|| Box::leak(Box::new(LruManager::new(EVICT_CFG.max_bytes))));
+
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+// Parses an environment variable value as a number or falls back to the default
+fn env_var_or<T>(var_name: &str, default: T) -> T
+where
+    T: FromStr + Copy,
+{
+    std::env::var(var_name)
+        .ok()
+        .and_then(|s| s.trim().parse::<T>().ok())
+        .unwrap_or(default)
 }
 
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 fn main() -> Result<(), Box<dyn Error>> {
     tracing_subscriber::fmt().with_env_filter(EnvFilter::from_default_env()).init();
 
-    let proxy_http_port = env_var_or_u16("PROXY_HTTP_PORT", DEFAULT_PROXY_HTTP_PORT[0]);
-    let proxy_https_port = env_var_or_u16("PROXY_HTTPS_PORT", DEFAULT_PROXY_HTTPS_PORT[0]);
+    let proxy_http_port: u16 = env_var_or("PROXY_HTTP_PORT", DEFAULT_PROXY_HTTP_PORT[0]);
+    let proxy_https_port: u16 = env_var_or("PROXY_HTTPS_PORT", DEFAULT_PROXY_HTTPS_PORT[0]);
 
     let cert_path = format!("{}/keys/server.crt", env!("CARGO_MANIFEST_DIR"));
     let key_path = format!("{}/keys/server.pem", env!("CARGO_MANIFEST_DIR"));
@@ -48,7 +82,7 @@ fn main() -> Result<(), Box<dyn Error>> {
         .unwrap();
     server.add_service(service);
 
-    tracing::info!("Pingora proxies starting");
+    tracing::info!("Pingora proxies starting with cache size {} bytes", EVICT_CFG.max_bytes);
     tracing::info!("    HTTP proxy listening on 127.0.0.1:{}...", proxy_http_port);
     tracing::info!("    HTTPS proxy listening on 127.0.0.1:{}...", proxy_https_port);
 
