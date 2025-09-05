@@ -17,9 +17,9 @@ This starts three endpoints:
 
 * `http://localhost:6188` insecure proxy endpoint  
 * `https://localhost:6143` TLS proxy endpoint  
-* `https://localhost:8080` proxy inspection  
-   - `https://localhost:8080/metrics` proxy metrics compatible with Prometheus  
-   - `https://localhost:8080/cache` proxy cache contents (very basic, but functional)
+* `http://localhost:8080` proxy inspection  
+   - `http://localhost:8080/metrics` proxy metrics compatible with Prometheus  
+   - `http://localhost:8080/cache` proxy cache contents (very basic, but functional)
 
 you will need to issue a `curl` command to the appropriate endpoint depending on whether you're accessing a secure or insecure address.
 
