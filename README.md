@@ -1,11 +1,12 @@
 # PoC Edge CDN Cache
 
-A CDN Edge reverse proxy PoC.
+A CDN Edge reverse proxy PoC based on Cloudflare's [Pingora Framework](https://github.com/cloudflare/pingora).
+
 The proposal is described [here](./docs/proposal.md)
 
 ## Generate TLS Certificate
 
-This PoC assumes that your server certificate and private key are located in the `./keys` directory as `server.crt` and `server.pem`.
+This PoC requires your server certificate and private key are located in the `./keys` directory as `server.crt` and `server.pem`.
 
 ## Usage
 
@@ -22,6 +23,8 @@ This starts three endpoints:
    - `http://localhost:8080/cache` proxy cache contents (very basic, but functional)
 
 You will need to issue a `curl` command to the appropriate endpoint depending on whether you're accessing a secure or insecure address.
+
+All cached responses are stored in the directory `.cache` immediately under `$CARGO_MANIFEST_DIR`.
 
 ### Secure
 
@@ -46,6 +49,19 @@ We're only interested in seeing the headers in the console, hence the arguments 
 If you're using a self-signed server certificate, then the `curl` command must include the `-k` option on order to skip certificate validation.
 
 Set the HTTP request `Host` header to the the name of the server you wish to access `-H 'Host: github.com'`
+
+---
+
+## Configuration
+
+The port numbers used by the Pingora Proxy can be set from these environment variables:
+
+| Scheme | Environment Variable | Defaults to
+|--------|----------------------|-------------
+| HTTP   | `PROXY_HTTP_PORT`    | `6188`
+| HTTPS  | `PROXY_HTTPS_PORT`   | `6143`
+
+If either of these environment variables are missing, or contain a value that cannot be parsed as a `u16`, then the default values will be usd instead
 
 ---
 
