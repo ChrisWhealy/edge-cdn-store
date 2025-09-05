@@ -1,6 +1,7 @@
 # PoC Edge CDN Cache
 
-A CDN Edge reverse proxy PoC. 
+A CDN Edge reverse proxy PoC.
+The proposal is described [here](./docs/proposal.md)
 
 ## Generate TLS Certificate
 
