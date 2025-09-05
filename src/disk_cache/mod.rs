@@ -38,7 +38,7 @@ pub struct DiskCache {
 
 impl DiskCache {
     pub fn new<P: AsRef<Path>>(root: P) -> Self {
-        tracing::debug!("<--> DiskCache::new()");
+        tracing::debug!("<--> DiskCache::new() at {}", root.as_ref().display());
         Self {
             root: root.as_ref().to_path_buf(),
             metrics: Arc::new(CacheMetrics::new()),
