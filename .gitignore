@@ -1,1 +1,5 @@
-/target
+.idea/
+keys/
+target/
+.DS_Store
+.cache/
