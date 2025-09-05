@@ -1,5 +1,7 @@
-.idea/
-keys/
-target/
+*.crt
+*.pem
 .DS_Store
+
+.idea/
+target/
 .cache/
