@@ -42,6 +42,16 @@ curl -s -o /dev/null -D - -k https://localhost:6143/ -H 'Host: github.com'
 curl -s -o /dev/null -D - -k http://localhost:6188/ -H 'Host: example.org'
 ```
 
+### Subresources
+
+In either case, to request a subresource belonging to the host, append the pathname to the proxy hostname.
+E.G.:
+
+```bash
+curl -s -o /dev/null -D - -k https://localhost:6143/help/example-domains -H 'Host: www.iana.org'
+```
+
+
 ### Useful `curl` Arguments
 
 We're only interested in seeing the headers in the console, hence the arguments to keep `curl` silent (`-s`), drop the body output into a black hole (`-o /dev/null`) and direct the headers to stdout (`-D -`)
