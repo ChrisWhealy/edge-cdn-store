@@ -3,12 +3,9 @@ mod handle_miss;
 pub mod inspector;
 
 use crate::{
-    disk_cache::{
-        handle_hit::DiskHitHandler,
-        handle_miss::DiskMissHandler,
-        inspector::{format_cache_key, trace_fn_exit_with_err},
-    },
+    disk_cache::{handle_hit::DiskHitHandler, handle_miss::DiskMissHandler},
     metrics::CacheMetrics,
+    utils::{format_cache_key, trace_fn_exit_with_err},
 };
 
 use async_trait::async_trait;

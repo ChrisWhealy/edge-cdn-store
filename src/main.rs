@@ -2,6 +2,7 @@ mod disk_cache;
 mod metrics;
 mod proxy;
 mod tiered;
+mod utils;
 
 use crate::{
     disk_cache::{inspector::start_disk_cache_inspector, DiskCache},
@@ -73,7 +74,7 @@ fn main() -> Result<(), Box<dyn Error>> {
     let mut server = Server::new(None)?;
     server.bootstrap();
 
-    let proxy = MyProxy::new(DEFAULT_PROXY_HTTP_PORT, DEFAULT_PROXY_HTTPS_PORT);
+    let proxy = MyProxy::new(proxy_http_port, proxy_https_port);
     let mut service = http_proxy_service(&server.configuration, proxy);
 
     service.add_tcp(&format!("127.0.0.1:{proxy_http_port}"));

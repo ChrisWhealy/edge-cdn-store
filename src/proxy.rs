@@ -1,14 +1,14 @@
-use crate::{disk_cache::inspector::trace_fn_exit, EVICT, TIERED};
+use crate::{
+    utils::{parse_host_authority, trace_fn_exit, trace_fn_exit_with_err}, EVICT,
+    TIERED,
+};
 
 use async_trait::async_trait;
 use pingora::{
     http::ResponseHeader,
     prelude::{ProxyHttp, Session},
 };
-use pingora_cache::{
-     storage::HandleHit, CacheKey, CacheMeta, ForcedInvalidationKind, NoCacheReason,
-    RespCacheable,
-};
+use pingora_cache::{storage::HandleHit, CacheKey, CacheMeta, ForcedInvalidationKind, NoCacheReason, RespCacheable};
 use pingora_core::prelude::HttpPeer;
 use pingora_error::{Error, ErrorType};
 use std::time::{Duration, SystemTime};
@@ -20,61 +20,21 @@ const LOOPBACK_IP: &str = "127.0.0.1";
 const LOCALHOST: &str = "localhost";
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-// Parse a Host header (authority): host[:port] or [IPv6]:port
-// Handle malformed values gracefully by returning HTTP 400 Bad Request
-fn parse_host_authority(raw: &str) -> pingora_error::Result<(String, Option<u16>)> {
-    // Handle malformed value - trailing slash
-    let s = raw.trim().trim_end_matches('/');
-
-    if s.is_empty() {
-        Error::e_explain(ErrorType::HTTPStatus(400), "Host header empty")
-    } else {
-        // IPv6 address?
-        if let Some(rest) = s.strip_prefix('[') {
-            // IPv6 literal: "[::1]" or "[::1]:6143"
-            if let Some(end) = rest.find(']') {
-                let host = &rest[..end]; // no brackets for SNI
-                let after = &rest[end + 1..]; // maybe ":port"
-                let port = after.strip_prefix(':').and_then(|p| p.parse::<u16>().ok());
-                Ok((host.to_string(), port))
-            } else {
-                Error::e_explain(ErrorType::HTTPStatus(400), "Malformed IPv6 address in Host")
-            }
-        } else {
-            // hostname / IPv4: "example.com[:port]"
-            if s.contains('/') || s.contains(' ') {
-                Error::e_explain(ErrorType::HTTPStatus(400), "Invalid characters in Host")
-            } else {
-                let mut it = s.splitn(2, ':');
-                let host = it.next().unwrap();
-                let port = it.next().and_then(|p| p.parse::<u16>().ok());
-
-                Ok((host.to_string(), port))
-            }
-        }
-    }
-}
-
-// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+#[allow(dead_code)]
 pub struct MyProxy {
     self_addresses: Vec<String>,
-    listen_http: &'static [u16],
-    listen_https: &'static [u16],
+    listen_http: u16,
+    listen_https: u16,
 }
 
 impl MyProxy {
-    pub fn new(listen_http: &'static [u16], listen_https: &'static [u16]) -> Self {
+    pub fn new(listen_http: u16, listen_https: u16) -> Self {
         let mut addresses = Vec::new();
 
-        for port in listen_https.iter() {
-            addresses.push(format!("{}:{}", LOOPBACK_IP, port));
-            addresses.push(format!("{}:{}", LOCALHOST, port));
-        }
-
-        for port in listen_http.iter() {
-            addresses.push(format!("{}:{}", LOOPBACK_IP, port));
-            addresses.push(format!("{}:{}", LOCALHOST, port));
-        }
+        addresses.push(format!("{}:{}", LOOPBACK_IP, listen_http));
+        addresses.push(format!("{}:{}", LOCALHOST, listen_http));
+        addresses.push(format!("{}:{}", LOOPBACK_IP, listen_https));
+        addresses.push(format!("{}:{}", LOCALHOST, listen_https));
 
         Self {
             self_addresses: addresses,
@@ -128,7 +88,7 @@ impl ProxyHttp for MyProxy {
         let listener_https = session
             .server_addr()
             .and_then(|sa| sa.as_inet().map(|inet| inet.port()))
-            .map(|p| self.listen_https.contains(&p))
+            .map(|p| self.listen_https.eq(&p))
             .unwrap_or(false);
 
         let use_https =
@@ -185,11 +145,7 @@ impl ProxyHttp for MyProxy {
             .unwrap_or_default();
         let (host_only, _port_opt) = match parse_host_authority(host_hdr) {
             Ok((host_only, port_opt)) => (host_only, port_opt),
-            Err(parse_err) => {
-                tracing::debug!("    {parse_err}");
-                tracing::debug!("<--- {fn_name}");
-                return Err(parse_err);
-            },
+            Err(parse_err) => return trace_fn_exit_with_err(fn_name, &parse_err.to_string(), false),
         };
 
         let host_lc = host_only.to_ascii_lowercase();
@@ -209,7 +165,7 @@ impl ProxyHttp for MyProxy {
         let use_https = session
             .server_addr()
             .and_then(|sa| sa.as_inet().map(|inet| inet.port()))
-            .map(|p| self.listen_https.contains(&p))
+            .map(|p| self.listen_https.eq(&p))
             .unwrap_or(false);
         let scheme = hdr_scheme
             .map(|s| if s.eq_ignore_ascii_case(HTTPS) { HTTPS } else { HTTP })
@@ -244,7 +200,6 @@ impl ProxyHttp for MyProxy {
         _ctx: &mut Self::CTX,
     ) -> pingora_error::Result<RespCacheable> {
         let fn_name = "MyProxy::response_cache_filter()";
-        let fn_exit = format!("<--- {fn_name}");
         tracing::debug!("---> {fn_name}");
         let status = resp.as_ref().status;
 
@@ -267,7 +222,7 @@ impl ProxyHttp for MyProxy {
         let meta = CacheMeta::new(now + ONE_HOUR, now, 0, 0, resp.clone());
         let response = RespCacheable::Cacheable(meta);
 
-        tracing::debug!("{fn_exit}");
+        tracing::debug!("<--- {fn_name}");
         Ok(response)
     }
 

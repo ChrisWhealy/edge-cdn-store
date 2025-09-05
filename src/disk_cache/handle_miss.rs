@@ -1,4 +1,4 @@
-use crate::{disk_cache::inspector::trace_fn_exit_with_err, metrics::CacheMetrics};
+use crate::{metrics::CacheMetrics, utils::trace_fn_exit_with_err};
 
 use async_trait::async_trait;
 use bytes::Bytes;

@@ -1,82 +1,14 @@
 use crate::disk_cache::DiskCache;
 
 use mime_guess;
-use pingora_cache::{
-    key::{CacheHashKey, CompactCacheKey},
-    CacheKey,
-};
-use pingora_error::{Error, ErrorType};
 use prometheus::{Encoder, TextEncoder};
 use std::{
-    fmt::Write,
     path::{Path, PathBuf},
     sync::Arc,
     thread,
 };
 use tokio::{fs, io};
 use warp::{http::header, reply::Response as WarpResponse, Filter, Rejection, Reply};
-
-static HEX_CHARS: &[u8] = b"0123456789ABCDEF";
-
-// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-// Development helper functions
-pub fn trace_fn_exit(fn_name: &str, err_msg: &str, trace_fn_enter: bool) {
-    if trace_fn_enter {
-        tracing::debug!("---> {fn_name}");
-    }
-    tracing::debug!("     {err_msg}");
-    tracing::debug!("<--- {fn_name}");
-}
-
-pub fn trace_fn_exit_with_err<E>(fn_name: &str, err_msg: &str, trace_fn_enter: bool) -> pingora_error::Result<E> {
-    trace_fn_exit(fn_name, err_msg, trace_fn_enter);
-    Error::e_explain(ErrorType::InternalError, err_msg.to_string())
-}
-
-// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-pub fn display_opt_str(opt_str: &Option<&str>) -> String {
-    match opt_str {
-        Some(s) if !s.is_empty() => s.to_string(),
-        _ => "\"\"".to_string(),
-    }
-}
-
-pub fn hex2str(hex: &[u8; 16]) -> String {
-    let mut s = String::with_capacity(hex.len() * 2);
-
-    for &byte in hex {
-        s.push(HEX_CHARS[(byte >> 4) as usize] as char);
-        s.push(HEX_CHARS[(byte & 0xf) as usize] as char);
-    }
-    s
-}
-
-#[allow(dead_code)]
-pub fn format_cache_key(ck: &CacheKey) -> String {
-    let mut buff: String = String::new();
-
-    let ns = format!("Namespace: {}", display_opt_str(&ck.namespace_str()));
-    let pk = format!("Primary Key: {}", display_opt_str(&ck.primary_key_str()));
-    let p = format!("Primary: {:?}", hex2str(&ck.primary_bin()));
-    let v = format!("Variance: {:?}", ck.variance());
-    let ut = format!("User tag: {}", if ck.user_tag.is_empty() { "\"\"" } else { &ck.user_tag });
-    let ext = format!("Extension: {:?}", ck.extensions);
-
-    write!(buff, "{ns}, {pk}, {p}, {v}, {ut}, {ext}").unwrap();
-    buff
-}
-
-#[allow(dead_code)]
-pub fn format_compact_cache_key(ck: &CompactCacheKey) -> String {
-    let mut buff: String = String::new();
-
-    let p = format!("Primary: {:?}", hex2str(&ck.primary_bin()));
-    let v = format!("Variance: {:?}", ck.variance());
-    let ut = format!("User tag: {}", if ck.user_tag.is_empty() { "\"\"" } else { &ck.user_tag });
-
-    write!(buff, "{p}, {v}, {ut}").unwrap();
-    buff
-}
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 pub fn start_disk_cache_inspector(cache: &'static DiskCache) {
