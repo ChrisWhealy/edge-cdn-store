@@ -61,7 +61,7 @@ The port numbers used by the Pingora Proxy can be set from these environment var
 | HTTP   | `PROXY_HTTP_PORT`    | `6188`
 | HTTPS  | `PROXY_HTTPS_PORT`   | `6143`
 
-If either of these environment variables are missing, or contain a value that cannot be parsed as a `u16`, then the default values will be usd instead
+If either of these environment variables are missing, or contain a value that cannot be parsed as a `u16`, then the default values will be used instead
 
 ---
 
