@@ -44,7 +44,7 @@ curl -s -o /dev/null -D - -k http://localhost:6188/ -H 'Host: example.org'
 
 ### Useful `curl` Arguments
 
-We're only interested in seeing the headers in the console, hence the arguments to keep `curl` silent (`-s`), lose the body output (`-o /dev/null`) and direct the headers to stdout (`-D -`)
+We're only interested in seeing the headers in the console, hence the arguments to keep `curl` silent (`-s`), drop the body output into a black hole (`-o /dev/null`) and direct the headers to stdout (`-D -`)
 
 If you're using a self-signed server certificate, then the `curl` command must include the `-k` option on order to skip certificate validation.
 
