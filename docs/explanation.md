@@ -137,7 +137,8 @@ The following functions need to be implemented:
 
 * ***`upstream_peer`***<br>
    By examining the incoming request, it calculates how to communicate with the upstream server.
-   It fetches the HTTP header `Host` and then derives what scheme to use for communication by looking fiorst for the pseudo-header `:scheme`, then if that is not found, it looks for `X-Forwarded-Proto`, and if that drops back to `http`.
+
+   It fetches the HTTP header `Host` and then derives what communication scheme to use by looking first for the pseudo-header `:scheme`, then if that is not found, it looks for `X-Forwarded-Proto`, and if that is not found, drops back to `http`.
 
    Once these values have been derived, it returns a `pingora_core::upstreams::peer::HttpPeer` that tells Pingora how to communicate with eth upstream server.
 
