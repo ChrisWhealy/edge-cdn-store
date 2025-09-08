@@ -4,8 +4,26 @@ use pingora_cache::{
 };
 use pingora_error::{Error, ErrorType};
 use std::fmt::Write;
+use std::str::FromStr;
 
 const HEX_CHARS: &[u8] = b"0123456789ABCDEF";
+
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+// Returns an environment variable or falls back to the default
+pub fn env_var_or_str(var_name: &str, default: &'static str) -> String {
+    std::env::var(var_name).unwrap_or_else(|_| default.to_string())
+}
+
+// Parses an environment variable value as a number or falls back to the default
+pub fn env_var_or_num<T>(var_name: &str, default: T) -> T
+where
+    T: FromStr + Copy,
+{
+    std::env::var(var_name)
+        .ok()
+        .and_then(|s| s.trim().parse::<T>().ok())
+        .unwrap_or(default)
+}
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 // Parse a Host header (authority): host[:port] or [IPv6]:port

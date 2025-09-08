@@ -145,3 +145,28 @@ The implemented functions are called automatically by the Pingora Framework as i
 
 * **`as_any`**<br>
   A hook function in which you could cast the cached object to some concrete type.
+
+# Open Questions and Limitations of the Current Implementation
+
+## Tiered Architecture
+
+A tiered cache architecture raises the following questions:
+
+1. If we get a miss from the primary cache, but a hit in the secondary, should that object be promoted to the primary?
+   
+   If the answer here is yes, then the current implementation `DiskCache` will need to implement an `admin hook` that permits the insertion of a new object without following the normal admission path (I.E. without interfering with or confusing the operation of the `EvictionManager`).
+   Pingora does not appear offer a built-in mechanism for such object promotion, so one would have to be designed.
+
+2. In order to potentially reduce latency, is the extra workload of a hedged lookup considered acceptable?
+   In other words, if the primary cache does npot respond within a certain time time, should we pre-emptively request the object from the secondary cache and use the answer from whichever cache answers first?
+
+## Metrics at Startup
+
+Cache metrics are not persisted when the server shuts down; therefore, when the server restarts, all the cached object are still present on disk, but the metrics the describe the activity on those objects have been lost.
+
+## Administrator's Dashboard
+
+What dashboard?  🤣
+
+The current display of the cache contents is a bare-bones implementation that currently offer no administrative tools.
+This needs to be implemented.

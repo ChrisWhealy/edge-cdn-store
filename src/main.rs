@@ -8,6 +8,7 @@ use crate::{
     disk_cache::{inspector::start_disk_cache_inspector, DiskCache},
     proxy::MyProxy,
     tiered::{TieredStorage, WritePolicy},
+    utils::{env_var_or_num, env_var_or_str},
 };
 
 use once_cell::sync::Lazy;
@@ -26,23 +27,6 @@ static DEFAULT_CACHE_DIR: &'static str = "./.cache";
 // Define cache and eviction policy
 static DISK_CACHE: Lazy<&'static DiskCache> =
     Lazy::new(|| Box::leak(Box::new(DiskCache::new(env_var_or_str("CACHE_DIR", DEFAULT_CACHE_DIR)))));
-
-// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-// Returns an environment variable or falls back to the default
-fn env_var_or_str(var_name: &str, default: &'static str) -> String {
-    std::env::var(var_name).unwrap_or_else(|_| default.to_string())
-}
-
-// Parses an environment variable value as a number or falls back to the default
-fn env_var_or_num<T>(var_name: &str, default: T) -> T
-where
-    T: FromStr + Copy,
-{
-    std::env::var(var_name)
-        .ok()
-        .and_then(|s| s.trim().parse::<T>().ok())
-        .unwrap_or(default)
-}
 
 // TODO Implement some sort of remote cache
 // static REMOTE: Lazy<&'static RemoteCache> = Lazy::new(|| Box::leak(Box::new(RemoteCache::new())));
