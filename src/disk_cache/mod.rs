@@ -90,7 +90,7 @@ impl Storage for DiskCache {
                 fs::read(&hdr_path).await.ok(),
                 fs::read(&body_path).await.ok(),
             ) {
-                // Require meta + body to exist
+                // Require meta + body + hdr to exist
                 (Some(meta_bin), Some(hdr_bin), Some(body)) => {
                     tracing::debug!("     Cache hit on key {}", format_cache_key(key));
                     self.metrics.lookup_hits.inc();

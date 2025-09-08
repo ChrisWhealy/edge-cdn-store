@@ -20,10 +20,29 @@ use tracing_subscriber::EnvFilter;
 static DEFAULT_PROXY_HTTP_PORT: &'static [u16] = &[6188];
 static DEFAULT_PROXY_HTTPS_PORT: &'static [u16] = &[6143];
 static DEFAULT_CACHE_SIZE_BYTES: &'static usize = &(2 * 1024 * 1024 * 1024); // Default cache size = 2Gb
+static DEFAULT_CACHE_DIR: &'static str = "./.cache";
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 // Define cache and eviction policy
-static DISK_CACHE: Lazy<&'static DiskCache> = Lazy::new(|| Box::leak(Box::new(DiskCache::new("./.cache"))));
+static DISK_CACHE: Lazy<&'static DiskCache> =
+    Lazy::new(|| Box::leak(Box::new(DiskCache::new(env_var_or_str("CACHE_DIR", DEFAULT_CACHE_DIR)))));
+
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+// Returns an environment variable or falls back to the default
+fn env_var_or_str(var_name: &str, default: &'static str) -> String {
+    std::env::var(var_name).unwrap_or_else(|_| default.to_string())
+}
+
+// Parses an environment variable value as a number or falls back to the default
+fn env_var_or_num<T>(var_name: &str, default: T) -> T
+where
+    T: FromStr + Copy,
+{
+    std::env::var(var_name)
+        .ok()
+        .and_then(|s| s.trim().parse::<T>().ok())
+        .unwrap_or(default)
+}
 
 // TODO Implement some sort of remote cache
 // static REMOTE: Lazy<&'static RemoteCache> = Lazy::new(|| Box::leak(Box::new(RemoteCache::new())));
@@ -45,28 +64,16 @@ pub struct EvictCfg {
     pub max_bytes: usize,
 }
 pub static EVICT_CFG: Lazy<EvictCfg> = Lazy::new(|| EvictCfg {
-    max_bytes: env_var_or("CACHE_SIZE_BYTES", *DEFAULT_CACHE_SIZE_BYTES),
+    max_bytes: env_var_or_num("CACHE_SIZE_BYTES", *DEFAULT_CACHE_SIZE_BYTES),
 });
 pub static EVICT: Lazy<&'static LruManager> = Lazy::new(|| Box::leak(Box::new(LruManager::new(EVICT_CFG.max_bytes))));
-
-// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-// Parses an environment variable value as a number or falls back to the default
-fn env_var_or<T>(var_name: &str, default: T) -> T
-where
-    T: FromStr + Copy,
-{
-    std::env::var(var_name)
-        .ok()
-        .and_then(|s| s.trim().parse::<T>().ok())
-        .unwrap_or(default)
-}
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 fn main() -> Result<(), Box<dyn Error>> {
     tracing_subscriber::fmt().with_env_filter(EnvFilter::from_default_env()).init();
 
-    let proxy_http_port: u16 = env_var_or("PROXY_HTTP_PORT", DEFAULT_PROXY_HTTP_PORT[0]);
-    let proxy_https_port: u16 = env_var_or("PROXY_HTTPS_PORT", DEFAULT_PROXY_HTTPS_PORT[0]);
+    let proxy_http_port: u16 = env_var_or_num("PROXY_HTTP_PORT", DEFAULT_PROXY_HTTP_PORT[0]);
+    let proxy_https_port: u16 = env_var_or_num("PROXY_HTTPS_PORT", DEFAULT_PROXY_HTTPS_PORT[0]);
 
     let cert_path = format!("{}/keys/server.crt", env!("CARGO_MANIFEST_DIR"));
     let key_path = format!("{}/keys/server.pem", env!("CARGO_MANIFEST_DIR"));
