@@ -14,7 +14,7 @@ This implementation should meet, or at least make provision for meeting, the fol
 
 ## 1. High Concurrency Support
 
-Cloudflare are specialists in the area of managing traffic network and distributed connectivity; therefore, the Pingora Framework has been delivered with built-in support for high leveles of concurrency.
+Cloudflare are specialists in the area of managing network traffic and distributed connectivity; therefore, the Pingora Framework has been delivered with built-in support for high leveles of concurrency.
 
 ## 2. Good Tokio Runtime Integration
 
