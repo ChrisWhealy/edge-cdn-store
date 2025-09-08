@@ -156,8 +156,9 @@ A tiered cache architecture raises the following questions:
    If the answer here is yes, then the current implementation `DiskCache` will need to implement an `admin hook` that permits the insertion of a new object without following the normal admission path (I.E. without interfering with or confusing the operation of the `EvictionManager`).
    Pingora does not appear offer a built-in mechanism for such object promotion, so one would have to be designed.
 
-2. In order to potentially reduce latency, is the extra workload of a hedged lookup considered acceptable?
-   In other words, if the primary cache does npot respond within a certain time time, should we pre-emptively request the object from the secondary cache and use the answer from whichever cache answers first?
+2. In order to reduce potential response latency, it would be worth considering whether the extra workload of a hedged lookup is acceptable?
+   In other words, we set an arbitrary response time within which the primary cache should respond. 
+   If that threshold is exceeded, then we pre-emptively request the object from the secondary cache and then use the object from whichever cache answers first.
 
 ## Metrics at Startup
 
@@ -169,3 +170,6 @@ What dashboard?  🤣
 
 The current display of the cache contents is a bare-bones implementation that currently offer no administrative tools.
 This needs to be implemented.
+
+One useful feature would be the ability to alter the cache size without needing to restart the server.
+This could be achieved by implementing a wrapper around `EvictionManager`, but the actual details need further investigation.  
