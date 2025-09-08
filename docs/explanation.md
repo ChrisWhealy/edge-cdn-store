@@ -4,15 +4,110 @@
 
 This implementation should meet, or at least make provision for meeting, the following criteria:
 
-1. Efficiently support a large amount of concurrent activity
+1. Support for highly concurrent activity
 2. Integrate well with the Tokio runtime
 3. Ensure good scalability by keeping memory consumption low
-3. Expose cache performance and activity statistics (compatible with Prometheus metrics).
-4. Integrate well with the `pingora_cache` `EvictionManager` to control the local cache size/population.
-5. Allow for a tiered cache architecture: primary cache is the local disk; the secondary cache is a shared or distributed cache layer accessible by multiple servers.
-6. Configurable cache behaviour
+4. Expose cache performance and activity statistics (compatible with Prometheus metrics).
+5. Integrate well with the `pingora_cache` `EvictionManager` to control the local cache size/population.
+6. Allow for a tiered cache architecture: primary cache is the local disk; the secondary cache is a shared or distributed cache layer accessible by multiple servers.
+7. Configurable cache behaviour
 
-## Implementation of the Trait `pingora_cache::Storage`
+## 1. High Concurrency Support
+
+Cloudflare are specialists in the area of managing traffic network and distributed connectivity; therefore, the Pingora Framework has been delivered with built-in support for high leveles of concurrency.
+
+## 2. Good Tokio Runtime Integration
+
+This is also an off-the-shelf design feature of the Pingora Framework.
+
+## 3. Low Memory Consumption 
+
+The current implementation ensures that memory consumption is kept low by writing cached objects to disk rather than keeping them in memory.
+
+## 4. Expose Cache Performance & Activity Statistics
+
+Currently, the following metrics are kept:
+
+| Metric           | Type      | Description                                                                   |
+|------------------|-----------|-------------------------------------------------------------------------------|
+| `lookup_hits`    | Monotonic | Cache lookup counter                                                          |
+| `served_hits`    | Monotonic | Count of cached object successfully delivered to the client                   |
+| `misses`         | Monotonic | Count of cache lookup failures                                                |
+| `inserts`        | Monotonic | Count of a new objects added to the cache                                     |
+| `purge_attempts` | Monotonic | Incremented each time the `EvictionManager` decides to remove a cached object |
+| `evictions`      | Monotonic | Incremented each time a cached object is successfully removed from the cache  |
+| `evicted_bytes`  | Monotonic | The total number of bytes removed from the cache                              |
+| `size_bytes`     | Variable  | The current size of the cache                                                 |
+
+These matrics are exposed in a format compatible with Prometheus and can be accessed via <localhost:8080/metrics>
+
+The actual cache contents can also be accessed via <localhost:8080/cache>.
+Currently, this a bare-bones interface with no administrative capability; however, it can be expanded to provide an administration interface.
+
+## 5. Integrate well with the `pingora_cache` `EvictionManager`
+
+The Pingora `EvictionManager` is invoked automatically by the Pingora `HttpCache`.
+
+The eviction policy used by the `EvictionManager` is defined at the time the cache is created.
+In this demo, the "Least Recently Used" (LRU) policy has been chosen.
+
+```rust
+static DEFAULT_CACHE_SIZE_BYTES: &'static usize = &(2 * 1024 * 1024 * 1024); // Default cache size = 2Gb
+
+pub struct EvictCfg {
+  pub max_bytes: usize,
+}
+
+pub static EVICT_CFG: Lazy<EvictCfg> = Lazy::new(|| EvictCfg {
+  max_bytes: env_var_or_num("CACHE_SIZE_BYTES", *DEFAULT_CACHE_SIZE_BYTES),
+});
+pub static EVICT: Lazy<&'static LruManager> = Lazy::new(|| Box::leak(Box::new(LruManager::new(EVICT_CFG.max_bytes))));
+```
+
+Where `LruManager` is an alias for `pingora_cache::eviction::simple_lru::Manager`.
+
+This eviction policy is then applied to the selected cache when `pingora_proxy::ProxyHttp::request_cache_filter()` is called.
+
+## 6. Tiered Cache Architecture
+
+The actual `DiskCaxche` object is declared as follows:
+
+```rust
+static DEFAULT_CACHE_DIR: &'static str = "./.cache";
+
+static DISK_CACHE: Lazy<&'static DiskCache> =
+    Lazy::new(|| Box::leak(Box::new(DiskCache::new(env_var_or_str("CACHE_DIR", DEFAULT_CACHE_DIR)))));
+```
+
+To implement a tiered cache, the following struct exists:
+
+```rust
+pub struct TieredStorage {
+    primary: &'static (dyn Storage + Sync),
+    secondary: Option<&'static (dyn Storage + Sync)>,
+    write_policy: WritePolicy,
+}
+```
+
+An instance of this struct can then be created with an optional `secondary` cache.
+
+In order to operate a tired lookup, the `TieredStorage` struct implements `pingora_cache::Storage` so that when its `lookup` function is called, rather than interacting directly with the disk cache, it first calls `lookup` on the primary cache.
+If that fails, it attempts to call `lookup` on the secondary (if one exists).
+
+## 7.Configurable Cache Behaviour
+
+Currently, the following aspects of the cache can be configured at start up by setting the following environment variables:
+
+| Environment Variable | Default Value            | Description                           |
+|----------------------|--------------------------|---------------------------------------|
+| `CACHE_DIR`          | `./.cache`               | The root directory for the disk cache |
+| `CACHE_SIZE_BYTES`   | `2 * 1024 * 1024 * 1024` | Default cache size (2Gb)              |
+| `PROXY_HTTP_PORT`    | `6143`                   | Default port for HTTP connections     |
+| `PROXY_HTTPS_PORT`   | `6188`                   | Default port for HTTPS connections    |
+
+
+
+# Implementation of the Trait `pingora_cache::Storage`
 
 ### `DiskCache`
 
@@ -49,12 +144,9 @@ This function is called when the proxy receives an incoming request for an objec
 
 Assuming a cache is enabled for this session (this PoC only has `DISK_CACHE` available), the Pingora Framework then calls the `DiskCache::lookup()` function for the requested resource.
 
-Our implementation of this function then determines whether the file is present in the disk cache.
+The current implementation of this function then determines whether the file is present in the disk cache.
 The first request for a resource will always return `None` because we have not yet obtained this object; but a cache hit returns an object that implements `pingora_cache::Storage::HandleHit`.
 
 If the Pingora framework receives `None` from a lookup, it then calls our implementation of the `DiskCache::get_miss_handler` function to obtain an object that implements `HandleMiss`
 
 Either way, hits are handled by a `HitHandler` and misses by a `MissHandler`
-
-As hits, misses, purge attempts and evictions on cached objects happen, the appropriate metrics are recorded and made available through the cache inspection enpoint running on http://localhost:8080/matrics.
-This information is made available in a form that can be consumed by Prometheus.

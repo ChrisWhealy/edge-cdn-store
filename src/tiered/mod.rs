@@ -25,7 +25,7 @@ pub enum WritePolicy {
 /// Tiered storage.
 ///
 /// - On `lookup()`: try primary, then secondary. If secondary hits, we serve from it.
-///   Maybe the hit from the secondary could be promoted to the primary, but this might confuse the EvictionManager...
+///   Maybe the hit from the secondary could be promoted to the primary, but that might confuse the EvictionManager...
 /// - On `get_miss_handler()`: by default we write only to primary.
 ///   The `WritePolicy::WriteThroughBoth` allows for an optional fan out write to secondary.
 pub struct TieredStorage {
