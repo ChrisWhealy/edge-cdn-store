@@ -157,10 +157,14 @@ A tiered cache architecture raises the following questions:
 
    Pingora does not appear offer a built-in mechanism for object promotion, so one would have to be designed.
 
-2. In order to reduce potential response latency, it might be worth considering whether the extra workload of a hedged lookup is acceptable
+2. In order to reduce potential response latency, it might be worth considering whether the extra workload of a hedged lookup is acceptable.
 
    In other words, we set an arbitrary response time within which the primary cache should respond. 
    If that threshold is exceeded, then we pre-emptively request the object from the secondary cache and then use the object from whichever cache answers first.
+
+   ***CAVEAT:***<br>
+   If badly configured, the "primary cache response time" could have a negative impact on cache performance; therefore it would need to be monitored an tuned carefully.
+   Consequently, such a value should not be implemented without there being a corresponding ability to make dynamic adjustments that value.
 
 ## Metrics at Startup
 

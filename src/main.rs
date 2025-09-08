@@ -75,7 +75,7 @@ fn main() -> Result<(), Box<dyn Error>> {
     server.add_service(service);
 
     tracing::info!("Pingora proxies starting with cache size {} bytes", EVICT_CFG.max_bytes);
-    tracing::info!("    HTTP proxy listening on 127.0.0.1:{}...", proxy_http_port);
+    tracing::info!("    HTTP  proxy listening on 127.0.0.1:{}...", proxy_http_port);
     tracing::info!("    HTTPS proxy listening on 127.0.0.1:{}...", proxy_https_port);
 
     start_disk_cache_inspector(*DISK_CACHE);
