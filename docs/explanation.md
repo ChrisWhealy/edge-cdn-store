@@ -140,7 +140,7 @@ The following functions need to be implemented:
 
    It fetches the HTTP header `Host` and then derives what communication scheme to use by looking first for the pseudo-header `:scheme`, then if that is not found, it looks for `X-Forwarded-Proto`, and if that is not found, drops back to `http`.
 
-   Once these values have been derived, it returns a `pingora_core::upstreams::peer::HttpPeer` that tells Pingora how to communicate with eth upstream server.
+   Once these values have been derived, it returns a `pingora_core::upstreams::peer::HttpPeer` that tells Pingora how to communicate with the upstream server.
 
 * ***`request_cache_filter`***<br>
    As long as the request does not create a request feedback loop (I.E. a request aimed at the proxy itself), this function connects the `DISK_CACHE` with the received `session` object.
@@ -157,7 +157,7 @@ The following functions need to be implemented:
    
    It is very important to honour the contents of the `cache-control` header and not cache object marked as `no-store`.
 
-   This implementation also arbitrarily refuses to cache object that are not returned with an HTTP 2xx status code.
+   This implementation also arbitrarily refuses to cache objects that are not returned with an HTTP 2xx status code.
 
 * ***`upstream_response_filter`***<br>
   Sets the HTTP header `X-CDN-Cache: MISS` to record the fact that the object was not served from the cache.
