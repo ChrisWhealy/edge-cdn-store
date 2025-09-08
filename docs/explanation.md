@@ -174,8 +174,8 @@ Cache metrics are not persisted when the server shuts down; therefore, when the 
 
 What dashboard?  🤣
 
-The current display of the cache contents is a bare-bones implementation that currently offer no administrative tools.
+The current display of the cache contents is a bare-bones implementation that currently offers no administrative tools.
 This needs to be implemented.
 
-One useful feature would be the ability to alter the cache size without needing to restart the server.
+One useful feature administrative feature would be the ability to change the cache size without having to restart the server.
 This could be achieved by implementing a wrapper around `EvictionManager`, but the actual details need further investigation.  
