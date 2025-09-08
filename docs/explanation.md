@@ -104,11 +104,27 @@ Currently, the following aspects of the cache can be configured at start up by s
 | `PROXY_HTTP_PORT`    | `6143`                   | Default port for HTTP connections     |
 | `PROXY_HTTPS_PORT`   | `6188`                   | Default port for HTTPS connections    |
 
+---
 
+### Startup
+
+The `main` function creates lazy static instance of the `DiskCache` called `DISK_CACHE`, which is then used within the `TIERED` cache object.
+
+After this, a proxy is created that implements `pingora_proxy::ProxyHttp`.
+Within this proxy is an implementation of the `request_cache_filter` function.
+This function is called when the proxy receives an incoming request for an object, and it is within this function that the decision is made to enable (or not) a particular cache for the current request session.
+
+Assuming a cache is enabled for this session (this PoC only has `DISK_CACHE` available), the Pingora Framework then calls the `DiskCache::lookup()` function for the requested resource.
+This function determines whether the file is present in the disk cache.
+The first request for a resource will always return `None` because we have not yet obtained this object; but a cache hit returns an object that implements `pingora_cache::Storage::HandleHit`.
+
+If the Pingora framework receives `None` from a lookup, it then calls our implementation of the `DiskCache::get_miss_handler` function to obtain an object that implements `HandleMiss`
+
+Either way, hits are handled by a `HitHandler` and misses by a `MissHandler`
 
 # Implementation of the Trait `pingora_cache::Storage`
 
-### `DiskCache`
+## `DiskCache`
 
 The `DiskCache` struct implements the trait `pingora_cache::Storage` and acts as the interface between the Pingora Framework and the cached objects stored on disk.
 The implemented functions are called automatically by the Pingora Framework as it handles an incoming request for content.
@@ -128,24 +144,3 @@ The implemented functions are called automatically by the Pingora Framework as i
 
 * **`as_any`**<br>
   A hook function in which you could cast the cached object to some concrete type.
-
-
-### Tiered Cache Architecture
-
-The cache is implemented as `struct DiskCache` that then implements the `pringora_cache::Storage` trait.
-
-The `main` function creates lazy static instance of the `DiskCache` called `DISK_Cache`, which is then used within the `TIERED` cache object.
-(Currently, there is only one cache, but the `TEIRED` object allows for there to be a secondary, remote cache to act as a fallback if the we get a miss on a local cache lookup)
-
-After this, a proxy is created that implements `pingora_proxy::ProxyHttp`.
-Within this proxy is an implementation of the `request_cache_filter` function.
-This function is called when the proxy receives an incoming request for an object, and it is within this function that the decision is made to enable (or not) a particular cache for the current session.
-
-Assuming a cache is enabled for this session (this PoC only has `DISK_CACHE` available), the Pingora Framework then calls the `DiskCache::lookup()` function for the requested resource.
-
-The current implementation of this function then determines whether the file is present in the disk cache.
-The first request for a resource will always return `None` because we have not yet obtained this object; but a cache hit returns an object that implements `pingora_cache::Storage::HandleHit`.
-
-If the Pingora framework receives `None` from a lookup, it then calls our implementation of the `DiskCache::get_miss_handler` function to obtain an object that implements `HandleMiss`
-
-Either way, hits are handled by a `HitHandler` and misses by a `MissHandler`
