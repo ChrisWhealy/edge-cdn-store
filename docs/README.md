@@ -6,6 +6,4 @@
    * [Proposed Benefits](motivation.md#proposed-benefits)
    * [Impact](motivation.md#impact)
 * [Explanation](explanation.md)
-   * [Requirements](explanation.md#requirements)
-   * [Implementation](explanation.md#implementation-of-the-trait-pingora_cachestorage)
 * [Drawbacks & Alternative](drawbacks.md)
