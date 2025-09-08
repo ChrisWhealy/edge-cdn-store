@@ -106,7 +106,7 @@ Currently, the following aspects of the cache can be configured at start up by s
 
 ---
 
-### Startup
+# Startup
 
 The `main` function creates lazy static instance of the `DiskCache` called `DISK_CACHE`, which is then used within the `TIERED` cache object.
 
@@ -123,8 +123,6 @@ If the Pingora framework receives `None` from a lookup, it then calls our implem
 Either way, hits are handled by a `HitHandler` and misses by a `MissHandler`
 
 # Implementation of the Trait `pingora_cache::Storage`
-
-## `DiskCache`
 
 The `DiskCache` struct implements the trait `pingora_cache::Storage` and acts as the interface between the Pingora Framework and the cached objects stored on disk.
 The implemented functions are called automatically by the Pingora Framework as it handles an incoming request for content.
