@@ -14,7 +14,7 @@ This implementation should meet, or at least make provision for meeting, the fol
 
 ## 1. High Concurrency Support
 
-Cloudflare are specialists in the area of managing network traffic and distributed connectivity; therefore, the Pingora Framework has been delivered with built-in support for high leveles of concurrency.
+Cloudflare are specialists in the area of managing network traffic and distributed connectivity; therefore, the Pingora Framework has been delivered with built-in support for high levels of concurrency.
 
 ## 2. Good Tokio Runtime Integration
 
@@ -39,14 +39,15 @@ Currently, the following metrics are kept:
 | `evicted_bytes`  | Monotonic | The total number of bytes removed from the cache                              |
 | `size_bytes`     | Variable  | The current size of the cache                                                 |
 
-These matrics are exposed in a format compatible with Prometheus and can be accessed via <localhost:8080/metrics>
+These matrics are exposed in a format compatible with Prometheus and can be accessed via <http://localhost:8080/metrics>
 
-The actual cache contents can also be accessed via <localhost:8080/cache>.
+The actual cache contents can also be accessed via <http://localhost:8080/cache>.
 Currently, this a bare-bones interface with no administrative capability; however, it can be expanded to provide an administration interface.
 
 ## 5. Integrate well with the `pingora_cache` `EvictionManager`
 
-The Pingora `EvictionManager` is invoked automatically by the Pingora `HttpCache`.
+The Pingora `EvictionManager` is invoked automatically by the Pingora `HttpCache` when it detects that the cache contents needs to be altered.
+Typically, the eviction manager decides that an object should be removed from the cache because because some threshold has been exceeded.
 
 The eviction policy used by the `EvictionManager` is defined at the time the cache is created.
 In this demo, the "Least Recently Used" (LRU) policy has been chosen.
