@@ -163,8 +163,8 @@ A tiered cache architecture raises the following questions:
    If that threshold is exceeded, then we pre-emptively request the object from the secondary cache and then use the object from whichever cache answers first.
 
    ***CAVEAT:***<br>
-   If badly configured, the "primary cache response time" could have a negative impact on cache performance; therefore it would need to be monitored an tuned carefully.
-   Consequently, such a value should not be implemented without there being a corresponding ability to make dynamic adjustments that value.
+   If badly configured, the "primary cache response time" could have a negative impact on cache performance; therefore it would need to be monitored and tuned carefully.
+   Consequently, such a value should not be implemented without providing a corresponding ability to adjust it dynamically.
 
 ## Metrics at Startup
 
