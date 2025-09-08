@@ -104,6 +104,9 @@ Currently, the following aspects of the cache can be configured at start up by s
 | `PROXY_HTTP_PORT`    | `6143`                   | Default port for HTTP connections     |
 | `PROXY_HTTPS_PORT`   | `6188`                   | Default port for HTTPS connections    |
 
+If any of these environment variables are missing, the default values will be used instead.
+In the case of variables holding numeric values, if the value cannot be parsed as a number, then the default will also be used. 
+
 ---
 
 # Startup
