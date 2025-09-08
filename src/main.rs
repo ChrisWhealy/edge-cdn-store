@@ -6,7 +6,7 @@ mod utils;
 
 use crate::{
     disk_cache::{inspector::start_disk_cache_inspector, DiskCache},
-    proxy::MyProxy,
+    proxy::EdgeCdnProxy,
     tiered::{TieredStorage, WritePolicy},
     utils::{env_var_or_num, env_var_or_str},
 };
@@ -14,7 +14,7 @@ use crate::{
 use once_cell::sync::Lazy;
 use pingora::prelude::*;
 use pingora_cache::eviction::simple_lru::Manager as LruManager;
-use std::{error::Error, str::FromStr};
+use std::error::Error;
 use tracing_subscriber::EnvFilter;
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
@@ -65,7 +65,7 @@ fn main() -> Result<(), Box<dyn Error>> {
     let mut server = Server::new(None)?;
     server.bootstrap();
 
-    let proxy = MyProxy::new(proxy_http_port, proxy_https_port);
+    let proxy = EdgeCdnProxy::new(proxy_http_port, proxy_https_port);
     let mut service = http_proxy_service(&server.configuration, proxy);
 
     service.add_tcp(&format!("127.0.0.1:{proxy_http_port}"));

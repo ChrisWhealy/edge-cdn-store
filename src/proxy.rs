@@ -21,13 +21,13 @@ const LOCALHOST: &str = "localhost";
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 #[allow(dead_code)]
-pub struct MyProxy {
+pub struct EdgeCdnProxy {
     self_addresses: Vec<String>,
     listen_http: u16,
     listen_https: u16,
 }
 
-impl MyProxy {
+impl EdgeCdnProxy {
     pub fn new(listen_http: u16, listen_https: u16) -> Self {
         let mut addresses = Vec::new();
 
@@ -46,7 +46,7 @@ impl MyProxy {
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 #[async_trait]
-impl ProxyHttp for MyProxy {
+impl ProxyHttp for EdgeCdnProxy {
     type CTX = ();
 
     // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -

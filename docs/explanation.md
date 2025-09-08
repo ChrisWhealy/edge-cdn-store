@@ -110,7 +110,7 @@ In the case of variables holding numeric values, if the value cannot be parsed a
 
 # Startup
 
-The `main` function creates lazy static instance of the `DiskCache` called `DISK_CACHE`, which is then used within the `TIERED` cache object.
+The `main` function creates a lazy static instance of `DiskCache` called `DISK_CACHE`, which is then used as the primary cache within the `TIERED` cache object.
 
 After this, a proxy is created that implements `pingora_proxy::ProxyHttp`.
 Within this proxy is an implementation of the `request_cache_filter` function.
@@ -124,7 +124,7 @@ If the Pingora framework receives `None` from a lookup, it then calls our implem
 
 Either way, hits are handled by a `HitHandler` and misses by a `MissHandler`
 
-# Implementation of the Trait `pingora_cache::Storage`
+# Implementation of `pingora_cache::Storage`
 
 The `DiskCache` struct implements the trait `pingora_cache::Storage` and acts as the interface between the Pingora Framework and the cached objects stored on disk.
 The implemented functions are called automatically by the Pingora Framework as it handles an incoming request for content.
@@ -177,5 +177,12 @@ What dashboard?  🤣
 The current display of the cache contents is a bare-bones implementation that currently offers no administrative tools.
 This needs to be implemented.
 
-One useful feature administrative feature would be the ability to change the cache size without having to restart the server.
-This could be achieved by implementing a wrapper around `EvictionManager`, but the actual details need further investigation.  
+### Useful Administrative Features
+
+1. Change cache size without having to restart the server.
+
+   This could be achieved by implementing a wrapper around `EvictionManager`, but the actual details need further investigation.
+
+2. Hot Upgrade.
+
+   By wrapping the actual proxy server in an admin wrapper, not only could the administrative features be closely coupled to the server, but an Erlang-style hot upgrade could be implemented 
