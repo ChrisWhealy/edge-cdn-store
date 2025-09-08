@@ -46,8 +46,8 @@ Currently, this a bare-bones interface with no administrative capability; howeve
 
 ## 5. Integrate well with the `pingora_cache` `EvictionManager`
 
-The Pingora `EvictionManager` is invoked automatically by the Pingora `HttpCache` when it detects that the cache contents needs to be altered.
-Typically, the eviction manager decides that an object should be removed from the cache because because some threshold has been exceeded.
+The Pingora `EvictionManager` is invoked automatically by the Pingora `HttpCache` when it detects that the cache contents need to be altered.
+Typically, the eviction manager decides that an object should be removed from the cache because some threshold has been exceeded.
 
 The eviction policy used by the `EvictionManager` is defined at the time the cache is created.
 In this demo, the "Least Recently Used" (LRU) policy has been chosen.
@@ -80,7 +80,7 @@ static DISK_CACHE: Lazy<&'static DiskCache> =
     Lazy::new(|| Box::leak(Box::new(DiskCache::new(env_var_or_str("CACHE_DIR", DEFAULT_CACHE_DIR)))));
 ```
 
-To implement a tiered cache, the following struct exists:
+This acts as the primary cached and is passed to the following struct with the option to provide a secondary cache:
 
 ```rust
 pub struct TieredStorage {
@@ -90,9 +90,7 @@ pub struct TieredStorage {
 }
 ```
 
-An instance of this struct can then be created with an optional `secondary` cache.
-
-In order to operate a tired lookup, the `TieredStorage` struct implements `pingora_cache::Storage` so that when its `lookup` function is called, rather than interacting directly with the disk cache, it first calls `lookup` on the primary cache.
+In order to operate a tiered lookup, the `TieredStorage` struct implements `pingora_cache::Storage` so that when its `lookup` function is called, rather than interacting directly with the disk cache, it first calls `lookup` on the primary cache.
 If that fails, it attempts to call `lookup` on the secondary (if one exists).
 
 ## 7.Configurable Cache Behaviour
