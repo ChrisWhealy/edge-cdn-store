@@ -124,6 +124,47 @@ If the Pingora framework receives `None` from a lookup, it then calls our implem
 
 Either way, hits are handled by a `HitHandler` and misses by a `MissHandler`
 
+# Implementation of `pingora_proxy::ProxyHttp`
+
+The struct `EdgeCdnProxy` implements the trait `pingora_proxy::ProxyHttp`.
+This means it can act as a standard proxy managed by the Pingora Framework.
+
+The following functions need to be implemented:
+
+* ***`new_ctx`***<br>
+   Creates a new proxy context.
+   This demo does not use a context.
+
+* ***`upstream_peer`***<br>
+   By examining the incoming request, it calculates how to communicate with the upstream server.
+   It fetches the HTTP header `Host` and then derives what scheme to use for communication by looking fiorst for the pseudo-header `:scheme`, then if that is not found, it looks for `X-Forwarded-Proto`, and if that drops back to `http`.
+
+   Once these values have been derived, it returns a `pingora_core::upstreams::peer::HttpPeer` that tells Pingora how to communicate with eth upstream server.
+
+* ***`request_cache_filter`***<br>
+   As long as the request does not create a request feedback loop (I.E. a request aimed at the proxy itself), this function connects the `DISK_CACHE` with the received `session` object.
+
+* ***`cache_key_callback`***<br>
+   This is a very important function that Pingora calls when it needs to generate the `CacheKey` for the currently requested resource.
+   In this demo implementation, the `CacheKey` is generated using only the `primary` value; the `namespace` and `user_tag` parts are not used.
+
+* ***`cache_hit_filter`***<br>
+   Pingora calls this function after a successful cache hit and can optionally be used to invalidate a cached resource.
+
+* ***`response_cache_filter`***<br>
+   Pingora calls this function to decide if the resource is cacheable.
+   
+   It is very important to honour the contents of the `cache-control` header and not cache object marked as `no-store`.
+
+   This implementation also arbitrarily refuses to cache object that are not returned with an HTTP 2xx status code.
+
+* ***`upstream_response_filter`***<br>
+  Sets the HTTP header `X-CDN-Cache: MISS` to record the fact that the object was not served from the cache.
+
+
+* ***`response_filter`***<br>
+  Sets the HTTP header `X-CDN-Cache` to `MISS` or `HIT` depending on whether the object was served from the cache.
+
 # Implementation of `pingora_cache::Storage`
 
 The `DiskCache` struct implements the trait `pingora_cache::Storage` and acts as the interface between the Pingora Framework and the cached objects stored on disk.
