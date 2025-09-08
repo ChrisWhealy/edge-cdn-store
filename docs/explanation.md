@@ -153,16 +153,18 @@ A tiered cache architecture raises the following questions:
 
 1. If we get a miss from the primary cache, but a hit in the secondary, should that object be promoted to the primary?
    
-   If the answer here is yes, then the current implementation `DiskCache` will need to implement an `admin hook` that permits the insertion of a new object without following the normal admission path (I.E. without interfering with or confusing the operation of the `EvictionManager`).
-   Pingora does not appear offer a built-in mechanism for such object promotion, so one would have to be designed.
+   If the answer is yes, then the current implementation of `DiskCache` will need to implement its own "admin hook" that permits the insertion of a new object without interfering with or confusing the operation of the `EvictionManager`.
 
-2. In order to reduce potential response latency, it would be worth considering whether the extra workload of a hedged lookup is acceptable?
+   Pingora does not appear offer a built-in mechanism for object promotion, so one would have to be designed.
+
+2. In order to reduce potential response latency, it might be worth considering whether the extra workload of a hedged lookup is acceptable
+
    In other words, we set an arbitrary response time within which the primary cache should respond. 
    If that threshold is exceeded, then we pre-emptively request the object from the secondary cache and then use the object from whichever cache answers first.
 
 ## Metrics at Startup
 
-Cache metrics are not persisted when the server shuts down; therefore, when the server restarts, all the cached object are still present on disk, but the metrics the describe the activity on those objects have been lost.
+Cache metrics are not persisted when the server shuts down; therefore, when the server restarts, all the cached object are still present on disk, but the metrics accumulated during the creation of the current cache state have been lost.
 
 ## Administrator's Dashboard
 
