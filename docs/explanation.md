@@ -41,8 +41,7 @@ Currently, the following metrics are kept:
 
 These matrics are exposed in a format compatible with Prometheus and can be accessed via <http://localhost:8080/metrics>
 
-The actual cache contents can also be accessed via <http://localhost:8080/cache>.
-Currently, this a bare-bones interface with no administrative capability; however, it can be expanded to provide an administration interface.
+The cache contents can be displayed via a bare-bones display <http://localhost:8080/cache>.
 
 ## 5. Integrate well with the `pingora_cache` `EvictionManager`
 
