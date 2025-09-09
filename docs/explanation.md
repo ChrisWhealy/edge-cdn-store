@@ -90,7 +90,7 @@ pub struct TieredStorage {
 }
 ```
 
-In order to operate a tiered lookup, the `TieredStorage` struct implements `pingora_cache::Storage` so that when its `lookup` function is called, rather than interacting directly with the disk cache, it first calls `lookup` on the primary cache.
+In order to operate a tiered lookup, the `TieredStorage` struct must also implement `pingora_cache::Storage` so that when its `lookup` function is called, rather than interacting directly with the disk cache, it first calls `lookup` on the primary cache.
 If that fails, it attempts to call `lookup` on the secondary (if one exists).
 
 ## 7. Configurable Cache Behaviour
