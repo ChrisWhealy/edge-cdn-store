@@ -39,14 +39,14 @@ Currently, the following metrics are kept:
 | `evicted_bytes`  | Monotonic | The total number of bytes removed from the cache                              |
 | `size_bytes`     | Variable  | The current size of the cache                                                 |
 
-These matrics are exposed in a format compatible with Prometheus and can be accessed via <http://localhost:8080/metrics>
+These metrics are exposed in a format compatible with Prometheus and can be accessed via <http://localhost:8080/metrics>
 
 The cache contents can be displayed via a bare-bones display <http://localhost:8080/cache>.
 
-## 5. Integrate well with the `pingora_cache` `EvictionManager`
+## 5. Integrate well with the Pingora `EvictionManager`
 
-The Pingora `EvictionManager` is invoked automatically by the Pingora `HttpCache` when it detects that the cache contents need to be altered.
-Typically, the eviction manager decides that an object should be removed from the cache because some threshold has been exceeded.
+The `EvictionManager` is invoked automatically by the Pingora `HttpCache` when it detects that the cache contents need to be altered.
+Typically, the eviction manager decides that an object should be removed from the cache because some time or size threshold has been exceeded.
 
 The eviction policy used by the `EvictionManager` is defined at the time the cache is created.
 In this demo, the "Least Recently Used" (LRU) policy has been chosen.
@@ -70,7 +70,7 @@ This eviction policy is then applied to the selected cache when `pingora_proxy::
 
 ## 6. Tiered Cache Architecture
 
-The actual `DiskCaxche` object is declared as follows:
+The actual `DiskCache` object is declared as follows and acts as the primary cache.
 
 ```rust
 static DEFAULT_CACHE_DIR: &'static str = "./.cache";
@@ -79,7 +79,8 @@ static DISK_CACHE: Lazy<&'static DiskCache> =
     Lazy::new(|| Box::leak(Box::new(DiskCache::new(env_var_or_str("CACHE_DIR", DEFAULT_CACHE_DIR)))));
 ```
 
-This acts as the primary cached and is passed to the following struct with the option to provide a secondary cache:
+An instance of the following struct is then created with the `primary` field set equal to the disk cache.
+In this case, the `secondary` cache is optional:
 
 ```rust
 pub struct TieredStorage {
