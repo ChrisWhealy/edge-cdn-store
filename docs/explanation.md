@@ -153,7 +153,7 @@ The following functions need to be implemented:
    As long as the request does not create a request feedback loop (I.E. a request aimed at the proxy itself), this function connects the `DISK_CACHE` with the received `session` object.
 
 * ***`cache_key_callback`***<br>
-   This is a very important function that Pingora calls when it needs to generate the `CacheKey` for the currently requested resource.
+   This function generates a `CacheKey` for the currently requested resource.
    In this demo implementation, the `CacheKey` is generated using only the `primary` value; the `namespace` and `user_tag` parts are not used.
 
 * ***`cache_hit_filter`***<br>
