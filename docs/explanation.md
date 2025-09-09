@@ -143,9 +143,9 @@ The following functions need to be implemented:
    It does this by examining the contents of the incoming request.
 
    In this case, it first fetches the HTTP header `Host`. 
-   Then it works out how to communicate with the upstream server by first looking for the pseudo-header `:scheme`.
-   If this cannot be found, it then looks for request header `X-Forwarded-Proto`.
-   If that is not found, then it drops back to `http`.
+   Then it works out how to communicate with the upstream server by first looking for the value of the pseudo-header `:scheme`.
+   If this cannot be found, it then looks for the value of the request header `X-Forwarded-Proto`.
+   If that cannot found, it drops back to `http`.
 
    Once these values have been derived, it returns a `pingora_core::upstreams::peer::HttpPeer` that tells Pingora how to communicate with the upstream server.
 
