@@ -179,14 +179,14 @@ The `DiskCache` struct implements the trait `pingora_cache::Storage` and acts as
 The implemented functions are called automatically by the Pingora Framework as it handles an incoming request for content.
 
 * **`lookup`**<br>
-  For a given `CacheKey`, this function examines the storage in which the cached object might be located and returns an appropriate hit handler or `None`.
+  For a given `CacheKey`, this function examines the storage in which the cached object might be located and returns either an appropriate hit handler or `None`.
 
 * **`get_miss_handler`**<br>
   Called if `lookup` returns `None`.
   This function writes the cached object's metadata to the storage and returns a handler that will be called at such time as the body of the requested object arrives.
 
 * **`purge`**<br>
-  Called when the `EvictionManager` decides that an object must be removed from the cache.
+  Called when the `EvictionManager` decides that a particular object must be removed from the cache.
 
 * **`update_meta`**<br>
   `update_meta` is called to refresh the stored headers/TTL for an object that already exists in storage, but the body has not changed.
@@ -209,7 +209,7 @@ A tiered cache architecture raises the following questions:
 2. In order to reduce potential response latency, it might be worth considering whether the extra workload of a hedged lookup is acceptable.
 
    In other words, we set an arbitrary response time within which the primary cache should respond. 
-   If that threshold is exceeded, then we pre-emptively request the object from the secondary cache and then use the object from whichever cache answers first.
+   If that time threshold is exceeded, then we pre-emptively request the object from the secondary cache and then use the object from whichever cache answers first.
 
    ***CAVEAT:***<br>
    If badly configured, the "primary cache response time" could have a negative impact on cache performance; therefore it would need to be monitored and tuned carefully.
