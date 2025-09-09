@@ -117,7 +117,9 @@ After this, a proxy is created that implements `pingora_proxy::ProxyHttp`.
 Within this proxy is an implementation of the `request_cache_filter` function.
 This function is called when the proxy receives an incoming request for an object, and it is within this function that the decision is made to enable (or not) a particular cache for the current request session.
 
-Assuming a cache is enabled for this session (this PoC only has `DISK_CACHE` available), the Pingora Framework then calls the `DiskCache::lookup()` function for the requested resource.
+In other words, should you need it, the Pingora framework provides the flexibility to implement request specific caches.   
+
+Assuming a cache is enabled for the current request session (in this PoC, only the `DISK_CACHE` is available), the Pingora Framework then calls the `DiskCache::lookup()` function for the requested resource.
 This function determines whether the file is present in the disk cache.
 The first request for a resource will always return `None` because we have not yet obtained this object; but a cache hit returns an object that implements `pingora_cache::Storage::HandleHit`.
 
