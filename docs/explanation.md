@@ -136,12 +136,16 @@ The following functions need to be implemented:
 
 * ***`new_ctx`***<br>
    Creates a new proxy context.
-   This demo does not use a context.
+   This demo does not use a proxy context.
 
 * ***`upstream_peer`***<br>
-   By examining the incoming request, it calculates how to communicate with the upstream server.
+   The purpose of this function is to calculate how to communicate with the upstream server.
+   It does this by examining the contents of the incoming request.
 
-   It fetches the HTTP header `Host` and then derives what communication scheme to use by looking first for the pseudo-header `:scheme`, then if that is not found, it looks for `X-Forwarded-Proto`, and if that is not found, drops back to `http`.
+   In this case, it first fetches the HTTP header `Host`. 
+   Then it works out how to communicate with the upstream server by first looking for the pseudo-header `:scheme`.
+   If this cannot be found, it then looks for request header `X-Forwarded-Proto`.
+   If that is not found, then it drops back to `http`.
 
    Once these values have been derived, it returns a `pingora_core::upstreams::peer::HttpPeer` that tells Pingora how to communicate with the upstream server.
 
