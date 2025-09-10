@@ -1,5 +1,5 @@
 use crate::{
-    utils::{parse_host_authority, trace_fn_exit, trace_fn_exit_with_err}, EVICT,
+    utils::{impl_trace, parse_host_authority, trace_fn_exit, trace_fn_exit_with_err, Trace}, EVICT,
     TIERED,
 };
 
@@ -12,6 +12,7 @@ use pingora_cache::{storage::HandleHit, CacheKey, CacheMeta, ForcedInvalidationK
 use pingora_core::prelude::HttpPeer;
 use pingora_error::{Error, ErrorType};
 use std::time::{Duration, SystemTime};
+use crate::utils::scheme_from_hdr;
 
 const ONE_HOUR: Duration = Duration::from_secs(3600);
 const HTTPS: &str = "https";
@@ -27,8 +28,11 @@ pub struct EdgeCdnProxy {
     listen_https: u16,
 }
 
+impl_trace!(EdgeCdnProxy);
+
 impl EdgeCdnProxy {
     pub fn new(listen_http: u16, listen_https: u16) -> Self {
+        <Self as Trace>::fn_enter_exit("new");
         let mut addresses = Vec::new();
 
         addresses.push(format!("{}:{}", LOOPBACK_IP, listen_http));
@@ -56,41 +60,32 @@ impl ProxyHttp for EdgeCdnProxy {
 
     // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
     async fn upstream_peer(&self, session: &mut Session, _ctx: &mut Self::CTX) -> pingora_error::Result<Box<HttpPeer>> {
-        let fn_name = "MyProxy::upstream_peer()";
-        tracing::debug!("---> {fn_name}");
+        let fn_name = "upstream_peer";
+        <Self as Trace>::fn_enter(fn_name);
 
         // Retrieve Host header
         let host_hdr = match session.req_header().headers.get("Host").and_then(|h| h.to_str().ok()) {
             Some(h) => h,
             None => {
+                <Self as Trace>::fn_exit(fn_name);
                 return Error::e_explain(ErrorType::ConnectError, "Host header missing from request");
             },
         };
 
-        let (host_only, port_from_host) = parse_host_authority(host_hdr)?;
+        let (host_only, port_from_host) = match parse_host_authority(host_hdr) {
+            Ok(host_and_port) => host_and_port,
+            Err(ha_err) => {
+                trace_fn_exit(fn_name, &ha_err.to_string(), false);
+                return Err(ha_err)
+            },
+        };
 
-        // Try to get scheme using the following fallback sequence:
-        // --> ":scheme" pseudo header
-        // --> "X-Forwarded-Proto"
-        // --> default to http
-        let hdr_scheme = session
-            .req_header()
-            .headers
-            .get(":scheme")
-            .and_then(|v| v.to_str().ok())
-            .or_else(|| {
-                session
-                    .req_header()
-                    .headers
-                    .get("x-forwarded-proto")
-                    .and_then(|v| v.to_str().ok())
-            });
+        let hdr_scheme = scheme_from_hdr(session);
         let listener_https = session
             .server_addr()
             .and_then(|sa| sa.as_inet().map(|inet| inet.port()))
             .map(|p| self.listen_https.eq(&p))
             .unwrap_or(false);
-
         let use_https =
             hdr_scheme.map(|s| s.eq_ignore_ascii_case(HTTPS)).unwrap_or(listener_https) || port_from_host == Some(443);
         let port = port_from_host.unwrap_or(if use_https { 443 } else { 80 });
@@ -105,14 +100,14 @@ impl ProxyHttp for EdgeCdnProxy {
         );
 
         let peer = HttpPeer::new((host_only, port), use_https, sni);
-        tracing::debug!("<--- {fn_name}");
+        <Self as Trace>::fn_exit(fn_name);
         Ok(Box::new(peer))
     }
 
     // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
     fn request_cache_filter(&self, session: &mut Session, _ctx: &mut Self::CTX) -> pingora_error::Result<()> {
-        let fn_name = "MyProxy::request_cache_filter()";
-        tracing::debug!("---> {fn_name}");
+        let fn_name = "request_cache_filter";
+        <Self as Trace>::fn_enter(fn_name);
 
         let host = session
             .req_header()
@@ -127,15 +122,15 @@ impl ProxyHttp for EdgeCdnProxy {
             tracing::debug!("     Disk cache enabled");
         }
 
-        tracing::debug!("<--- {fn_name}");
+        <Self as Trace>::fn_exit(fn_name);
         Ok(())
     }
 
     // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
     // Build cache key from scheme+host+path
     fn cache_key_callback(&self, session: &Session, _ctx: &mut Self::CTX) -> pingora_error::Result<CacheKey> {
-        let fn_name = "MyProxy::cache_key_callback()";
-        tracing::debug!("---> {fn_name}");
+        let fn_name = "cache_key_callback";
+        <Self as Trace>::fn_enter(fn_name);
 
         let host_hdr = session
             .req_header()
@@ -147,21 +142,8 @@ impl ProxyHttp for EdgeCdnProxy {
             Ok((host_only, port_opt)) => (host_only, port_opt),
             Err(parse_err) => return trace_fn_exit_with_err(fn_name, &parse_err.to_string(), false),
         };
-
         let host_lc = host_only.to_ascii_lowercase();
-
-        let hdr_scheme = session
-            .req_header()
-            .headers
-            .get(":scheme")
-            .and_then(|v| v.to_str().ok())
-            .or_else(|| {
-                session
-                    .req_header()
-                    .headers
-                    .get("x-forwarded-proto")
-                    .and_then(|v| v.to_str().ok())
-            });
+        let hdr_scheme = scheme_from_hdr(session);
         let use_https = session
             .server_addr()
             .and_then(|sa| sa.as_inet().map(|inet| inet.port()))
@@ -174,7 +156,7 @@ impl ProxyHttp for EdgeCdnProxy {
         let primary = format!("{scheme}://{host_lc}{path_q}");
 
         tracing::debug!("     cache key primary = {primary}");
-        tracing::debug!("<--- {fn_name}");
+        <Self as Trace>::fn_exit(fn_name);
 
         Ok(CacheKey::new(&[], primary.as_bytes(), ""))
     }
@@ -199,8 +181,8 @@ impl ProxyHttp for EdgeCdnProxy {
         resp: &ResponseHeader,
         _ctx: &mut Self::CTX,
     ) -> pingora_error::Result<RespCacheable> {
-        let fn_name = "MyProxy::response_cache_filter()";
-        tracing::debug!("---> {fn_name}");
+        let fn_name = "response_cache_filter";
+        <Self as Trace>::fn_enter(fn_name);
         let status = resp.as_ref().status;
 
         // Non-2xx status codes are not cached
@@ -222,7 +204,7 @@ impl ProxyHttp for EdgeCdnProxy {
         let meta = CacheMeta::new(now + ONE_HOUR, now, 0, 0, resp.clone());
         let response = RespCacheable::Cacheable(meta);
 
-        tracing::debug!("<--- {fn_name}");
+        <Self as Trace>::fn_exit(fn_name);
         Ok(response)
     }
 

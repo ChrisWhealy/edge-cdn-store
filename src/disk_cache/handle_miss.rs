@@ -1,4 +1,4 @@
-use crate::{metrics::CacheMetrics, utils::trace_fn_exit_with_err};
+use crate::{metrics::CacheMetrics, utils::{Trace, impl_trace, trace_fn_exit_with_err}};
 
 use async_trait::async_trait;
 use bytes::Bytes;
@@ -28,6 +28,8 @@ pub struct DiskMissHandler {
     pub metrics: Arc<CacheMetrics>,
 }
 
+impl_trace!(DiskMissHandler);
+
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 impl DiskMissHandler {
     pub async fn create_tmp(path_dir: &Path, hint: &str) -> pingora_error::Result<(PathBuf, fs::File)> {
@@ -54,7 +56,8 @@ impl DiskMissHandler {
 impl HandleMiss for DiskMissHandler {
     async fn write_body(&mut self, data: Bytes, is_eof: bool) -> pingora_error::Result<()> {
         // Due to the frequency with which this function is called, trace output is only written when an error occurs
-        let fn_name = "DiskMissHandler::write_body()";
+        let fn_name = "write_body";
+        <Self as Trace>::fn_enter(fn_name);
 
         // Temp file created in get_miss_handler - should be able to open it here
         let mut file = match fs::OpenOptions::new().append(true).open(&self.tmp_path).await {
@@ -75,13 +78,14 @@ impl HandleMiss for DiskMissHandler {
             file.flush().await.ok();
         }
 
+        <Self as Trace>::fn_exit(fn_name);
         Ok(())
     }
 
     // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
     async fn finish(self: Box<Self>) -> pingora_error::Result<MissFinishType> {
-        let fn_name = "DiskMissHandler::finish()";
-        tracing::debug!("---> {fn_name}");
+        let fn_name = "finish";
+        <Self as Trace>::fn_enter(fn_name);
 
         // Ensure directory exists (idempotent)
         fs::create_dir_all(&self.dir).await.ok();
@@ -126,7 +130,7 @@ impl HandleMiss for DiskMissHandler {
         self.metrics.size_bytes.add(self.tmp_bytes_written as i64);
 
         tracing::debug!("     {} bytes written", self.tmp_bytes_written);
-        tracing::debug!("<--- {fn_name}");
+        <Self as Trace>::fn_exit(fn_name);
         Ok(MissFinishType::Created(self.tmp_bytes_written))
     }
 

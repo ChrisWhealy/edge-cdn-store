@@ -1,12 +1,11 @@
-use crate::{metrics::CacheMetrics, utils::trace_fn_exit_with_err};
+use crate::{
+    metrics::CacheMetrics,
+    utils::{impl_trace, trace_fn_exit_with_err, Trace},
+};
 
 use async_trait::async_trait;
 use bytes::Bytes;
-use pingora_cache::{
-    storage::HandleHit,
-    trace::SpanHandle,
-    {CacheKey, Storage},
-};
+use pingora_cache::{storage::HandleHit, trace::SpanHandle, CacheKey, Storage};
 use std::{any::Any, sync::Arc};
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
@@ -19,11 +18,13 @@ pub struct DiskHitHandler {
     pub metrics: Arc<CacheMetrics>,
 }
 
+impl_trace!(DiskHitHandler);
+
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 #[async_trait]
 impl HandleHit for DiskHitHandler {
     async fn read_body(&mut self) -> pingora_error::Result<Option<Bytes>> {
-        tracing::debug!("<--> DiskHitHandler::read_body()");
+        <Self as Trace>::fn_enter_exit("read_body");
 
         Ok(if self.done {
             None
@@ -40,7 +41,7 @@ impl HandleHit for DiskHitHandler {
         _key: &CacheKey,
         _trace: &SpanHandle,
     ) -> pingora_error::Result<()> {
-        tracing::debug!("<--> DiskHitHandler::finish()");
+        <Self as Trace>::fn_enter_exit("finish");
         self.metrics.served_hits.inc();
         Ok(())
     }
@@ -52,8 +53,8 @@ impl HandleHit for DiskHitHandler {
 
     // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
     fn seek(&mut self, start: usize, end: Option<usize>) -> pingora_error::Result<()> {
-        let fn_name = "DiskHitHandler::seek()";
-        tracing::debug!("---> {fn_name}");
+        let fn_name = "seek";
+        <Self as Trace>::fn_enter(fn_name);
 
         if start >= self.body.len() {
             trace_fn_exit_with_err(
@@ -69,7 +70,7 @@ impl HandleHit for DiskHitHandler {
             }
             self.done = false; // Range read is complete
 
-            tracing::debug!("<--- {fn_name}");
+            <Self as Trace>::fn_exit(fn_name);
             Ok(())
         }
     }

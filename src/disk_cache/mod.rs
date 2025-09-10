@@ -5,15 +5,15 @@ pub mod inspector;
 use crate::{
     disk_cache::{handle_hit::DiskHitHandler, handle_miss::DiskMissHandler},
     metrics::CacheMetrics,
-    utils::{format_cache_key, trace_fn_exit_with_err},
+    utils::{format_cache_key, trace_fn_exit_with_err, Trace, impl_trace},
 };
 
 use async_trait::async_trait;
 use pingora_cache::{
-    key::{CacheHashKey, CompactCacheKey},
-    storage::{HitHandler, MissHandler, PurgeType, Storage},
+    key::{CacheHashKey, CompactCacheKey}, storage::{HitHandler, MissHandler, PurgeType, Storage},
     trace::SpanHandle,
-    {CacheKey, CacheMeta},
+    CacheKey,
+    CacheMeta,
 };
 use std::{
     any::Any,
@@ -36,9 +36,11 @@ pub struct DiskCache {
     pub metrics: Arc<CacheMetrics>,
 }
 
+impl_trace!(DiskCache);
+
 impl DiskCache {
     pub fn new<P: AsRef<Path>>(root: P) -> Self {
-        tracing::debug!("<--> DiskCache::new() at {}", root.as_ref().display());
+        <Self as Trace>::fn_enter_exit("new");
         Self {
             root: root.as_ref().to_path_buf(),
             metrics: Arc::new(CacheMetrics::new()),
@@ -71,8 +73,8 @@ impl Storage for DiskCache {
         key: &CacheKey,
         _trace: &SpanHandle,
     ) -> pingora_error::Result<Option<(CacheMeta, HitHandler)>> {
-        let fn_name = "DiskCache::lookup()";
-        tracing::debug!("---> {fn_name}");
+        let fn_name = "lookup";
+        <Self as Trace>::fn_enter(fn_name);
 
         if let Err(e) = fs::create_dir_all(&self.root).await {
             return trace_fn_exit_with_err(
@@ -83,40 +85,39 @@ impl Storage for DiskCache {
         };
 
         let (_hash, _dir, body_path, meta_path, hdr_path) = self.path_from_key(key);
+        let mut result: Option<(CacheMeta, HitHandler)> = None;
 
-        Ok(
-            match (
-                fs::read(&meta_path).await.ok(),
-                fs::read(&hdr_path).await.ok(),
-                fs::read(&body_path).await.ok(),
-            ) {
-                // Require meta + body + hdr to exist
-                (Some(meta_bin), Some(hdr_bin), Some(body)) => {
-                    tracing::debug!("     Cache hit on key {}", format_cache_key(key));
-                    self.metrics.lookup_hits.inc();
+        match (
+            fs::read(&meta_path).await.ok(),
+            fs::read(&hdr_path).await.ok(),
+            fs::read(&body_path).await.ok(),
+        ) {
+            // Require meta + body + hdr to exist
+            (Some(meta_bin), Some(hdr_bin), Some(body)) => {
+                self.metrics.lookup_hits.inc();
+                tracing::debug!("     Cache hit on key {}", format_cache_key(key));
 
-                    // Deserialize meta and build hit handler
-                    let meta = CacheMeta::deserialize(&meta_bin, &hdr_bin)?;
-                    let body_len = body.len();
-                    let hit = DiskHitHandler {
-                        body: Arc::new(body),
-                        done: false,
-                        range_start: 0,
-                        range_end: body_len,
-                        metrics: self.metrics.clone(),
-                    };
+                // Deserialize meta and build hit handler
+                let meta = CacheMeta::deserialize(&meta_bin, &hdr_bin)?;
+                let body_len = body.len();
+                let hit = DiskHitHandler {
+                    body: Arc::new(body),
+                    done: false,
+                    range_start: 0,
+                    range_end: body_len,
+                    metrics: self.metrics.clone(),
+                };
 
-                    tracing::debug!("<--- {fn_name}");
-                    Some((meta, Box::new(hit)))
-                },
-                _ => {
-                    self.metrics.misses.inc();
-                    tracing::debug!("     Cache miss");
-                    tracing::debug!("<--- {fn_name}");
-                    None
-                },
+                result = Some((meta, Box::new(hit)));
             },
-        )
+            _ => {
+                self.metrics.misses.inc();
+                tracing::debug!("     Cache miss");
+            },
+        }
+
+        <Self as Trace>::fn_exit(fn_name);
+        Ok(result)
     }
 
     // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
@@ -126,8 +127,8 @@ impl Storage for DiskCache {
         meta: &CacheMeta,
         _trace: &SpanHandle,
     ) -> pingora_error::Result<MissHandler> {
-        let fn_name = "DiskCache::get_miss_handler()";
-        tracing::debug!("---> {fn_name}");
+        let fn_name = "get_miss_handler";
+        <Self as Trace>::fn_enter(fn_name);
         self.metrics.misses.inc();
 
         let (hash, dir, body_path, meta_path, hdr_path) = self.path_from_key(key);
@@ -152,7 +153,7 @@ impl Storage for DiskCache {
             metrics: self.metrics.clone(),
         };
 
-        tracing::debug!("<--- {fn_name}");
+        <Self as Trace>::fn_exit(fn_name);
         Ok(Box::new(disk_miss_handler))
     }
 
@@ -163,8 +164,8 @@ impl Storage for DiskCache {
         _purge_type: PurgeType,
         _trace: &SpanHandle,
     ) -> pingora_error::Result<bool> {
-        let fn_name = "DiskCache::purge()";
-        tracing::debug!("---> {fn_name}");
+        let fn_name = "purge";
+        <Self as Trace>::fn_enter(fn_name);
 
         self.metrics.purge_attempts.inc();
 
@@ -189,7 +190,7 @@ impl Storage for DiskCache {
         let _ = std::fs::remove_file(&hdr_path);
         let _ = std::fs::remove_dir(&dir); // Ignore possible error due to races with above fs_remove() calls
 
-        tracing::debug!("<--- {fn_name}");
+        <Self as Trace>::fn_exit(fn_name);
         Ok(existed)
     }
 
@@ -200,8 +201,8 @@ impl Storage for DiskCache {
         meta: &CacheMeta,
         _trace: &SpanHandle,
     ) -> pingora_error::Result<bool> {
-        let fn_name = "DiskCache::update_meta()";
-        tracing::debug!("---> {fn_name}");
+        let fn_name = "update_meta";
+        <Self as Trace>::fn_enter(fn_name);
 
         let (_hash, _dir, body_path, meta_path, hdr_path) = self.path_from_key(key);
 
@@ -226,7 +227,7 @@ impl Storage for DiskCache {
             false
         };
 
-        tracing::debug!("<--- {fn_name}");
+        <Self as Trace>::fn_exit(fn_name);
         Ok(exists)
     }
 

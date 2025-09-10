@@ -1,3 +1,4 @@
+use pingora::proxy::Session;
 use pingora_cache::{
     key::{CacheHashKey, CompactCacheKey},
     CacheKey,
@@ -7,6 +8,32 @@ use std::fmt::Write;
 use std::str::FromStr;
 
 const HEX_CHARS: &[u8] = b"0123456789ABCDEF";
+
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+pub trait Trace {
+    fn struct_name() -> &'static str;
+    fn fn_enter(fn_name: &str) {
+        tracing::debug!("---> {}::{fn_name}()", Self::struct_name())
+    }
+    fn fn_enter_exit(fn_name: &str) {
+        tracing::debug!("<--> {}::{fn_name}()", Self::struct_name())
+    }
+    fn fn_exit(fn_name: &str) {
+        tracing::debug!("<--- {}::{fn_name}()", Self::struct_name())
+    }
+}
+
+macro_rules! impl_trace {
+    ($name:ident $(<$($gen:tt),* $(,)? >)? $(where $($whr:tt)*)? ) => {
+        impl $(<$($gen),*>)? Trace for $name $(<$($gen),*>)? $(where $($whr)*)? {
+            fn struct_name() -> &'static str {
+                stringify!($name)
+            }
+        }
+    };
+}
+
+pub(crate) use impl_trace;
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 // Returns an environment variable or falls back to the default
@@ -23,6 +50,27 @@ where
         .ok()
         .and_then(|s| s.trim().parse::<T>().ok())
         .unwrap_or(default)
+}
+
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+// Try to get scheme using the following fallback sequence:
+// --> ":scheme" pseudo header
+// --> "X-Forwarded-Proto"
+// --> default to http
+pub fn scheme_from_hdr(session: &Session) -> Option<String> {
+    session
+        .req_header()
+        .headers
+        .get(":scheme")
+        .and_then(|v| v.to_str().ok())
+        .or_else(|| {
+            session
+                .req_header()
+                .headers
+                .get("x-forwarded-proto")
+                .and_then(|v| v.to_str().ok())
+        })
+        .map(String::from)
 }
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -

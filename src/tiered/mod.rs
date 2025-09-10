@@ -1,13 +1,15 @@
 // Add the fan_out module when the secondary cache is implemented
 // mod fan_out;
 
+use crate::utils::{Trace, impl_trace};
+
 use async_trait::async_trait;
 // use fan_out::*;
 use pingora_cache::{
     key::CompactCacheKey,
     storage::{HitHandler, MissHandler, PurgeType, Storage},
     trace::SpanHandle,
-    {CacheKey, CacheMeta},
+    CacheKey, CacheMeta,
 };
 use std::any::Any;
 
@@ -34,12 +36,15 @@ pub struct TieredStorage {
     write_policy: WritePolicy,
 }
 
+impl_trace!(TieredStorage);
+
 impl TieredStorage {
     pub fn new(
         primary: &'static (dyn Storage + Sync),
         secondary: Option<&'static (dyn Storage + Sync)>,
         write_policy: WritePolicy,
     ) -> Self {
+        <Self as Trace>::fn_enter_exit("new");
         Self {
             primary,
             secondary,
@@ -56,8 +61,8 @@ impl Storage for TieredStorage {
         key: &CacheKey,
         trace: &SpanHandle,
     ) -> pingora_error::Result<Option<(CacheMeta, HitHandler)>> {
-        let fn_name = "TieredStorage::lookup()";
-        tracing::debug!("---> {fn_name}");
+        let fn_name = "lookup";
+        <Self as Trace>::fn_enter(fn_name);
 
         let response: Option<(CacheMeta, HitHandler)> = if let Some(hit) = self.primary.lookup(key, trace).await? {
             // Response from primary
@@ -73,7 +78,7 @@ impl Storage for TieredStorage {
             None
         };
 
-        tracing::debug!("<--- {fn_name}");
+        <Self as Trace>::fn_exit(fn_name);
         Ok(response)
     }
 
@@ -84,8 +89,8 @@ impl Storage for TieredStorage {
         meta: &CacheMeta,
         trace: &SpanHandle,
     ) -> pingora_error::Result<MissHandler> {
-        let fn_name = "TieredStorage::get_miss_handler()";
-        tracing::debug!("---> {fn_name}");
+        let fn_name = "get_miss_handler";
+        <Self as Trace>::fn_enter(fn_name);
 
         // Always create a primary miss handler
         let primary_miss = self.primary.get_miss_handler(key, meta, trace).await?;
@@ -102,7 +107,7 @@ impl Storage for TieredStorage {
             },
         };
 
-        tracing::debug!("<--- {fn_name}");
+        <Self as Trace>::fn_exit(fn_name);
         Ok(miss_handler)
     }
 
@@ -113,8 +118,8 @@ impl Storage for TieredStorage {
         purge_type: PurgeType,
         trace: &SpanHandle,
     ) -> pingora_error::Result<bool> {
-        let fn_name = "TieredStorage::purge()";
-        tracing::debug!("---> {fn_name}");
+        let fn_name = "purge";
+        <Self as Trace>::fn_enter(fn_name);
 
         let existed = match purge_type {
             PurgeType::Eviction => {
@@ -140,7 +145,7 @@ impl Storage for TieredStorage {
             },
         };
 
-        tracing::debug!("<--- {fn_name}");
+        <Self as Trace>::fn_exit(fn_name);
         Ok(existed)
     }
 
@@ -151,8 +156,8 @@ impl Storage for TieredStorage {
         meta: &CacheMeta,
         trace: &SpanHandle,
     ) -> pingora_error::Result<bool> {
-        let fn_name = "TieredStorage::update_meta()";
-        tracing::debug!("---> {fn_name}");
+        let fn_name = "update_meta";
+        <Self as Trace>::fn_enter(fn_name);
 
         // Update primary; best-effort mirror to secondary if present.
         let mut updated = self.primary.update_meta(key, meta, trace).await?;
@@ -163,7 +168,7 @@ impl Storage for TieredStorage {
             }
         }
 
-        tracing::debug!("<--- {fn_name}");
+        <Self as Trace>::fn_exit(fn_name);
         Ok(updated)
     }
 
