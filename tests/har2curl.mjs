@@ -1,7 +1,4 @@
 #!/usr/bin/env node
-// har2curl.mjs
-// Usage: node har2curl.mjs input.har > replay.sh
-// If no file is provided (or "-" is used), reads HAR from stdin.
 
 import fs from 'fs/promises'
 import { spawn } from 'child_process'
@@ -13,6 +10,9 @@ const usage = "Usage: ./har2curl.mjs <har_file>"
 // Produce curl line from a URL string; returns null if not parseable
 const curlCmd = urlStr =>
   new Promise((resolve, reject) => {
+    let data = ''
+    let error = ''
+
     const u = new URL(urlStr)
 
     // Ignore fragments
@@ -28,9 +28,6 @@ const curlCmd = urlStr =>
     ]
     const curl = spawn('curl', argList)
 
-    let data = ''
-    let error = ''
-
     curl.stdout.on('data', chunk => data += chunk)
     curl.stderr.on('data', chunk => error += chunk);
     curl.on('error', err => reject(err))
@@ -42,10 +39,9 @@ const curlCmd = urlStr =>
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 const main = async () => {
-  const arg = process.argv[2]
-
   let input
   let har
+  const arg = process.argv[2]
 
   // We must be passed a file, we're not going to read directly from stdin
   if (arg && arg !== '-') {
