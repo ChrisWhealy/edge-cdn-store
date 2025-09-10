@@ -7,8 +7,17 @@ import { spawn } from 'child_process'
 const usage = "Usage: ./har2curl.mjs <har_file>"
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+const fetchHeader = (hdrList, hdrName) => {
+    for (const hdr of hdrList) {
+        if (hdr.name === hdrName) return hdr.value
+    }
+
+    return null
+}
+
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 // Produce curl line from a URL string; returns null if not parseable
-const curlCmd = urlStr =>
+const curlCmd = (urlStr, userAgent) =>
   new Promise((resolve, reject) => {
     let data = ''
     let error = ''
@@ -24,7 +33,8 @@ const curlCmd = urlStr =>
       '-o', process.platform === 'win32' ? 'NUL' : '/dev/null',
       '-D', '-',
       '-k', `https://localhost:6143${path}`,
-      `-H`, `Host: ${u.host}`
+      `-H`, `Host: ${u.host}`,
+      `-H`, `User-Agent: ${userAgent}`,
     ]
     const curl = spawn('curl', argList)
 
@@ -66,11 +76,15 @@ const main = async () => {
   }
 
   for (const entry of entries) {
-    const urlStr = entry?.request?.url
+      if (entry.request) {
+        const urlStr = entry.request.url
+        const userAgent = fetchHeader(entry.request.headers, "user-agent")
 
-    if (typeof urlStr !== 'string' || urlStr.trim() === '') continue
+        if (typeof urlStr !== 'string' || urlStr.trim() === '' || userAgent ) continue
 
-    console.log(await curlCmd(urlStr))
+        console.log(await curlCmd(urlStr, userAgent))
+
+      }
   }
 }
 
