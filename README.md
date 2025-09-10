@@ -51,7 +51,6 @@ E.G.:
 curl -s -o /dev/null -D - -k https://localhost:6143/help/example-domains -H 'Host: www.iana.org'
 ```
 
-
 ### Useful `curl` Arguments
 
 We're only interested in seeing the headers in the console, hence the arguments to keep `curl` silent (`-s`), drop the body output into a black hole (`-o /dev/null`) and direct the headers to stdout (`-D -`)
@@ -75,18 +74,24 @@ One way of testing this proxy is as follows:
 7. Run `./har2curl.mjs` passing your `.har` file as the argument
 8. The URL's recorded in the `.har` file will be requested via a `curl` command through the proxy and the headers printed to the console.
 
+To test cache eviction, start the proxy with with a lower cache size.  E.G.:
+
+```bash
+CACHE_SIZE_BYTES=$((2 * 1024 * 1024)); cargo run
+```
+
 ---
 
 ## Configuration
 
-The port numbers used by the Pingora Proxy can be set from these environment variables:
+The CDN Edge Proxy can be configured using the following environment variables:
 
-| Scheme | Environment Variable | Defaults to
-|--------|----------------------|-------------
-| HTTP   | `PROXY_HTTP_PORT`    | `6188`
-| HTTPS  | `PROXY_HTTPS_PORT`   | `6143`
-
-If either of these environment variables are missing, or contain a value that cannot be parsed as a `u16`, then the default values will be used instead
+| Environment Variable | Default Value            | Description                           |
+|----------------------|--------------------------|---------------------------------------|
+| `CACHE_DIR`          | `./.cache`               | The root directory for the disk cache |
+| `CACHE_SIZE_BYTES`   | `2 * 1024 * 1024 * 1024` | Default cache size (2Gb)              |
+| `PROXY_HTTP_PORT`    | `6143`                   | Default port for HTTP connections     |
+| `PROXY_HTTPS_PORT`   | `6188`                   | Default port for HTTPS connections    |
 
 ---
 
