@@ -76,15 +76,14 @@ const main = async () => {
   }
 
   for (const entry of entries) {
-      if (entry.request) {
-        const urlStr = entry.request.url
-        const userAgent = fetchHeader(entry.request.headers, "user-agent")
+    if (entry.request) {
+      const urlStr = entry.request.url
+      const userAgent = fetchHeader(entry.request.headers, "user-agent")
 
-        if (typeof urlStr !== 'string' || urlStr.trim() === '' || userAgent ) continue
+      if (typeof urlStr !== 'string' || urlStr.trim() === '' || userAgent ) continue
 
-        console.log(await curlCmd(urlStr, userAgent))
-
-      }
+      console.log(await curlCmd(urlStr, userAgent))
+    }
   }
 }
 
