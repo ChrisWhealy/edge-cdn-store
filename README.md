@@ -6,7 +6,7 @@ The proposal is described [here](docs/README.md)
 
 ## Generate TLS Certificate
 
-This PoC requires your server certificate and private key are located in the `./keys` directory as `server.crt` and `server.pem`.
+This PoC requires that your server certificate and private key files are located in the `./keys` directory as `server.crt` and `server.pem`.
 
 ## Usage
 

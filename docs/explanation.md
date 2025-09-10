@@ -139,8 +139,7 @@ The following functions need to be implemented:
    This demo does not use a proxy context.
 
 * ***`upstream_peer`***<br>
-   The purpose of this function is to calculate how to communicate with the upstream server.
-   It does this by examining the contents of the incoming request.
+   By examining the contents of the incoming request, this function calculates how to communicate with the upstream server.
 
    In this case, it first fetches the HTTP header `Host`. 
    Then it works out how to communicate with the upstream server by first looking for the value of the pseudo-header `:scheme`.
@@ -162,7 +161,7 @@ The following functions need to be implemented:
 * ***`response_cache_filter`***<br>
    Pingora calls this function to decide if the resource is cacheable.
    
-   It is very important to honour the contents of the `cache-control` header and not cache object marked as `no-store`.
+   It is very important to honour the contents of the `cache-control` header and not cache any object marked as `no-store`.
 
    This implementation also arbitrarily refuses to cache objects that are not returned with an HTTP 2xx status code.
 
@@ -224,14 +223,14 @@ Cache metrics are not persisted when the server shuts down; therefore, when the 
 What dashboard?  🤣
 
 The current display of the cache contents is a bare-bones implementation that currently offers no administrative tools.
-This needs to be implemented.
+Such tools need to be implemented.
 
 ### Useful Administrative Features
 
-1. Change cache size without having to restart the server.
+1. Change the cache size without having to restart the server.
 
    This could be achieved by implementing a wrapper around `EvictionManager`, but the actual details need further investigation.
 
 2. Hot Upgrade.
 
-   By wrapping the actual proxy server in an admin wrapper, not only could the administrative features be closely coupled to the server, but an Erlang-style hot upgrade could be implemented 
+   By wrapping the actual proxy server in an admin wrapper, an Erlang-style hot upgrade could be implemented.
