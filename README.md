@@ -72,8 +72,8 @@ One way of testing this proxy is as follows:
 4. Stop recording the network log
 5. Export the network log as a `.har` file to some local directory
 6. Change into this repo's `./tests` directory
-7. Run `./har2curl.mjs` with you `.har` file as the argument
-8. The URL's recorded in the `.har` file will be requested via the proxy and the headers printed to the console.
+7. Run `./har2curl.mjs` passing your `.har` file as the argument
+8. The URL's recorded in the `.har` file will be requested via a `curl` command through the proxy and the headers printed to the console.
 
 ---
 
