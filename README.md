@@ -62,6 +62,21 @@ Set the HTTP request `Host` header to the the name of the server you wish to acc
 
 ---
 
+## Testing
+
+One way of testing this proxy is s follows:
+
+1. Open the developer tools in your browser
+2. Select the network taba dn ensure that the Network tab is empty and that you are recording the network log
+3. Visit a web page such as <https:://em.wikipedia.org/Main_Page>
+4. Stop recording the network log
+5. Export the network log as a `.har` file to some local directory
+6. Change into this repo's `./tests` directory
+7. Run `./har2curl.mjs` with you `.har` file as the argument
+8. The URL's recorded in the `.har` file will be requested via the proxy and the headers printed to the console.
+
+---
+
 ## Configuration
 
 The port numbers used by the Pingora Proxy can be set from these environment variables:
