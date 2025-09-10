@@ -16,7 +16,7 @@ const fetchHeader = (hdrList, hdrName) => {
 }
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-// Produce curl line from a URL string; returns null if not parseable
+// Issue curl command
 const curlCmd = (urlStr, userAgent) =>
   new Promise((resolve, reject) => {
     let data = ''
