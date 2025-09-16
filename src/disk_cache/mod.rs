@@ -5,7 +5,7 @@ pub mod inspector;
 use crate::{
     disk_cache::{handle_hit::DiskHitHandler, handle_miss::DiskMissHandler},
     metrics::CacheMetrics,
-    utils::{format_cache_key, trace_fn_exit_with_err, Trace, impl_trace},
+    utils::{format_cache_key, impl_trace, trace_fn_exit_with_err, Trace},
 };
 
 use async_trait::async_trait;
@@ -20,7 +20,9 @@ use std::{
     path::{Path, PathBuf},
     sync::Arc,
 };
-use tokio::fs;
+use tokio::{fs, fs::File, join};
+
+static DEFAULT_READ_BUFFER_SIZE: usize = 256 * 1024; // This will probably need to be made configurable
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 /// The cache directory structure is as follows, with each part of the cached data living in its own directory
@@ -85,36 +87,52 @@ impl Storage for DiskCache {
         };
 
         let (_hash, _dir, body_path, meta_path, hdr_path) = self.path_from_key(key);
-        let mut result: Option<(CacheMeta, HitHandler)> = None;
 
-        match (
-            fs::read(&meta_path).await.ok(),
-            fs::read(&hdr_path).await.ok(),
-            fs::read(&body_path).await.ok(),
-        ) {
-            // Require meta + body + hdr to exist
-            (Some(meta_bin), Some(hdr_bin), Some(body)) => {
+        // Read only those files we know are small
+        let (meta_res, hdr_res, file_res) = join!(
+            fs::read(&meta_path),
+            fs::read(&hdr_path),
+            // TODO: need to look at how to share this file descriptor between requests
+            File::open(&body_path)
+        );
+
+        let result = match (meta_res, hdr_res, file_res) {
+            (Ok(meta_bin), Ok(hdr_bin), Ok(file)) => {
+                // determine total length once
+                let total_len = match file.metadata().await {
+                    Ok(m) => m.len(),
+                    Err(e) => {
+                        return trace_fn_exit_with_err(
+                            fn_name,
+                            &format!("unable to determine file size for cached entry {}: {e}", body_path.display()),
+                            false,
+                        );
+                    },
+                };
+
                 self.metrics.lookup_hits.inc();
                 tracing::debug!("     Cache hit on key {}", format_cache_key(key));
 
-                // Deserialize meta and build hit handler
                 let meta = CacheMeta::deserialize(&meta_bin, &hdr_bin)?;
-                let body_len = body.len();
                 let hit = DiskHitHandler {
-                    body: Arc::new(body),
-                    done: false,
+                    file,
+                    total_len,
                     range_start: 0,
-                    range_end: body_len,
+                    range_end: total_len,
+                    pos: 0,
+                    pending_seek: false, // defer seek
+                    chunk: DEFAULT_READ_BUFFER_SIZE,
                     metrics: self.metrics.clone(),
                 };
 
-                result = Some((meta, Box::new(hit)));
+                Some((meta, Box::new(hit) as HitHandler))
             },
             _ => {
                 self.metrics.misses.inc();
                 tracing::debug!("     Cache miss");
+                None
             },
-        }
+        };
 
         <Self as Trace>::fn_exit(fn_name);
         Ok(result)

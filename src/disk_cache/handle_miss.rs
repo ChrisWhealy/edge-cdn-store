@@ -57,7 +57,6 @@ impl HandleMiss for DiskMissHandler {
     async fn write_body(&mut self, data: Bytes, is_eof: bool) -> pingora_error::Result<()> {
         // Due to the frequency with which this function is called, trace output is only written when an error occurs
         let fn_name = "write_body";
-        <Self as Trace>::fn_enter(fn_name);
 
         // Temp file created in get_miss_handler - should be able to open it here
         let mut file = match fs::OpenOptions::new().append(true).open(&self.tmp_path).await {
@@ -78,7 +77,6 @@ impl HandleMiss for DiskMissHandler {
             file.flush().await.ok();
         }
 
-        <Self as Trace>::fn_exit(fn_name);
         Ok(())
     }
 
