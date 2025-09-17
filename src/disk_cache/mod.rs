@@ -3,11 +3,7 @@ mod handle_hit;
 mod handle_miss;
 pub mod inspector;
 
-use crate::{
-    disk_cache::{cache_statistics::fetch_cache_state, handle_hit::DiskHitHandler, handle_miss::DiskMissHandler},
-    metrics::CacheMetrics,
-    utils::{format_cache_key, impl_trace, trace_fn_exit_with_err, Trace},
-};
+use crate::{disk_cache::{cache_statistics::fetch_cache_state, handle_hit::DiskHitHandler, handle_miss::DiskMissHandler}, metrics::CacheMetrics, utils::{format_cache_key, impl_trace, trace_fn_exit_with_err, Trace}, EVICT_CFG};
 
 use async_trait::async_trait;
 use pingora_cache::{
@@ -48,19 +44,24 @@ impl DiskCache {
     pub fn new<P: AsRef<Path>>(root: P) -> Self {
         <Self as Trace>::fn_enter_exit("new");
 
-        let size_bytes = if let Ok(stats) = fetch_cache_state(root.as_ref().to_path_buf()) {
+        let prev_size = if let Ok(stats) = fetch_cache_state(root.as_ref().to_path_buf()) {
             tracing::debug!("Fetched existing cache statistics: {:#?}", stats);
-            stats.size_bytes as i64
+            stats.size_bytes_current as i64
         } else {
             tracing::debug!("Previous cache statistics not found in {}", root.as_ref().display());
             0
         };
 
+        // Has the maximum cache size shrunk as a result of this restart?
+        if EVICT_CFG.max_bytes < prev_size as usize {
+            tracing::warn!("Maximum cache size is now smaller than the current cache size on disk!")
+        }
+
         Self {
             root: root.as_ref().to_path_buf(),
             start_time: std::time::SystemTime::now(),
             uptime: AtomicU64::new(0),
-            metrics: Arc::new(CacheMetrics::new(size_bytes)),
+            metrics: Arc::new(CacheMetrics::new(prev_size)),
         }
     }
 

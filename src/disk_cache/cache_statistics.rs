@@ -1,4 +1,4 @@
-use crate::{disk_cache::DiskCache, CACHE_STATE_FILENAME};
+use crate::{disk_cache::DiskCache, CACHE_STATE_FILENAME, EVICT_CFG};
 
 use serde::{Deserialize, Serialize};
 use std::{
@@ -14,7 +14,8 @@ pub struct CacheStatistics {
     pub root: PathBuf,
     pub start_time: std::time::SystemTime,
     pub uptime: std::time::Duration,
-    pub size_bytes: u64,
+    pub size_bytes_current: u64,
+    pub size_bytes_max: u64,
 }
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
@@ -28,7 +29,8 @@ pub fn persist_cache_state(cache: &'static DiskCache) -> std::io::Result<()> {
         root: cache.root.clone(),
         start_time: cache.start_time,
         uptime: std::time::Duration::from_secs(cache.uptime.load(Ordering::Relaxed)),
-        size_bytes: cache.metrics.size_bytes.get() as u64,
+        size_bytes_current: cache.metrics.size_bytes.get() as u64,
+        size_bytes_max: EVICT_CFG.max_bytes as u64,
     };
 
     serde_json::to_writer_pretty(writer, &cs).map_err(|e| Error::new(ErrorKind::Other, e))?;
