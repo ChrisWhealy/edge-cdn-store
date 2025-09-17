@@ -9,6 +9,7 @@ use std::{
 };
 use tokio::{fs, io};
 use warp::{http::header, reply::Response as WarpResponse, Filter, Rejection, Reply};
+use crate::IN_ADDR_ANY;
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 pub fn start_disk_cache_inspector(cache: &'static DiskCache) {
@@ -47,8 +48,8 @@ pub fn start_disk_cache_inspector(cache: &'static DiskCache) {
 
             let routes = show_cache.or(metrics_route);
 
-            tracing::info!("Cache inspector listening on http://127.0.0.1:8080");
-            warp::serve(routes).run(([127, 0, 0, 1], 8080)).await;
+            tracing::info!("Cache inspector listening on http://{IN_ADDR_ANY}:8080");
+            warp::serve(routes).run((IN_ADDR_ANY, 8080)).await;
         });
     });
 }

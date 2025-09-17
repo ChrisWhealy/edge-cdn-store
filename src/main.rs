@@ -14,14 +14,17 @@ use crate::{
 use once_cell::sync::Lazy;
 use pingora::{prelude::*, server::RunArgs};
 use pingora_cache::eviction::simple_lru::Manager as LruManager;
-use std::error::Error;
+use std::{
+    error::Error,
+    net::{IpAddr, Ipv4Addr},
+};
 use tracing_subscriber::EnvFilter;
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 static DEFAULT_PROXY_HTTP_PORT: &'static [u16] = &[6188];
 static DEFAULT_PROXY_HTTPS_PORT: &'static [u16] = &[6143];
 static DEFAULT_CACHE_SIZE_BYTES: &'static usize = &(2 * 1024 * 1024 * 1024); // Default cache size = 2Gb
-static IN_ADDR_ANY: &'static str = "0.0.0.0";
+static IN_ADDR_ANY: IpAddr = IpAddr::V4(Ipv4Addr::UNSPECIFIED);
 static DEFAULT_CACHE_DIR: &'static str = "./.cache";
 
 pub static CACHE_STATE_FILENAME: &str = "_cache_state.json";
