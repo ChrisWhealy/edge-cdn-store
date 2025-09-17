@@ -13,8 +13,8 @@ pub struct CacheMetrics {
 }
 
 impl CacheMetrics {
-    pub fn new() -> Self {
-        Self {
+    pub fn new(size_bytes: i64) -> Self {
+        let cm = Self {
             lookup_hits: register_int_counter!("cache_lookup_hits", "Cache lookup hits").unwrap(),
             served_hits: register_int_counter!("cache_served_hits", "Cache served hits").unwrap(),
             misses: register_int_counter!("cache_misses", "Cache misses").unwrap(),
@@ -23,6 +23,9 @@ impl CacheMetrics {
             evictions: register_int_counter!("cache_evictions", "Successful cache evictions").unwrap(),
             evicted_bytes: register_int_counter!("evicted_bytes", "Total bytes evicted").unwrap(),
             size_bytes: register_int_gauge!("cache_size_bytes", "Current cache size in bytes").unwrap(),
-        }
+        };
+        
+        cm.size_bytes.set(size_bytes);
+        cm
     }
 }

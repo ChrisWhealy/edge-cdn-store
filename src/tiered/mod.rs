@@ -1,15 +1,15 @@
 // Add the fan_out module when the secondary cache is implemented
 // mod fan_out;
 
-use crate::utils::{Trace, impl_trace};
+use crate::utils::{impl_trace, Trace};
 
 use async_trait::async_trait;
 // use fan_out::*;
 use pingora_cache::{
-    key::CompactCacheKey,
-    storage::{HitHandler, MissHandler, PurgeType, Storage},
+    key::CompactCacheKey, storage::{HitHandler, MissHandler, PurgeType, Storage},
     trace::SpanHandle,
-    CacheKey, CacheMeta,
+    CacheKey,
+    CacheMeta,
 };
 use std::any::Any;
 
@@ -27,7 +27,8 @@ pub enum WritePolicy {
 /// Tiered storage.
 ///
 /// - On `lookup()`: try primary, then secondary. If secondary hits, we serve from it.
-///   Maybe the hit from the secondary could be promoted to the primary, but that might confuse the EvictionManager...
+///   Maybe the hit from the secondary could be promoted to the primary, but that would need to be done in a way that
+///   does not confuse the EvictionManager...
 /// - On `get_miss_handler()`: by default we write only to primary.
 ///   The `WritePolicy::WriteThroughBoth` allows for an optional fan out write to secondary.
 pub struct TieredStorage {

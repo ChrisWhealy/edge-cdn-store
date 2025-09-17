@@ -1,9 +1,10 @@
+pub(crate) mod cache_statistics;
 mod handle_hit;
 mod handle_miss;
 pub mod inspector;
 
 use crate::{
-    disk_cache::{handle_hit::DiskHitHandler, handle_miss::DiskMissHandler},
+    disk_cache::{cache_statistics::fetch_cache_state, handle_hit::DiskHitHandler, handle_miss::DiskMissHandler},
     metrics::CacheMetrics,
     utils::{format_cache_key, impl_trace, trace_fn_exit_with_err, Trace},
 };
@@ -17,7 +18,9 @@ use pingora_cache::{
 };
 use std::{
     any::Any,
+    io::ErrorKind,
     path::{Path, PathBuf},
+    sync::atomic::{AtomicU64, Ordering},
     sync::Arc,
 };
 use tokio::{fs, fs::File, join};
@@ -32,9 +35,10 @@ static DEFAULT_READ_BUFFER_SIZE: usize = 256 * 1024; // This will probably need 
 ///   * `$CACHE_ROOT/hash[0..2]/hash[2..4]/hash/body`
 ///   * `$CACHE_ROOT/hash[0..2]/hash[2..4]/hash/meta`
 ///   * `$CACHE_ROOT/hash[0..2]/hash[2..4]/hash/hdr`
-#[derive(Clone)]
 pub struct DiskCache {
     pub root: PathBuf,
+    pub start_time: std::time::SystemTime,
+    pub uptime: AtomicU64,
     pub metrics: Arc<CacheMetrics>,
 }
 
@@ -43,20 +47,41 @@ impl_trace!(DiskCache);
 impl DiskCache {
     pub fn new<P: AsRef<Path>>(root: P) -> Self {
         <Self as Trace>::fn_enter_exit("new");
+
+        let size_bytes = if let Ok(stats) = fetch_cache_state(root.as_ref().to_path_buf()) {
+            tracing::debug!("Fetched existing cache statistics: {:#?}", stats);
+            stats.size_bytes as i64
+        } else {
+            tracing::debug!("Previous cache statistics not found in {}", root.as_ref().display());
+            0
+        };
+
         Self {
             root: root.as_ref().to_path_buf(),
-            metrics: Arc::new(CacheMetrics::new()),
+            start_time: std::time::SystemTime::now(),
+            uptime: AtomicU64::new(0),
+            metrics: Arc::new(CacheMetrics::new(size_bytes)),
         }
     }
 
+    // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+    pub fn set_uptime_now(&self) {
+        if let Ok(elapsed) = self.start_time.elapsed() {
+            self.uptime.store(elapsed.as_secs(), Ordering::Relaxed);
+        }
+    }
+
+    // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
     fn path_from_key(&self, key: &CacheKey) -> (String, PathBuf, PathBuf, PathBuf, PathBuf) {
         self.path_from_hash(key.combined())
     }
 
+    // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
     fn path_from_compact_key(&self, key: &CompactCacheKey) -> (String, PathBuf, PathBuf, PathBuf, PathBuf) {
         self.path_from_hash(key.combined())
     }
 
+    // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
     fn path_from_hash(&self, hash: String) -> (String, PathBuf, PathBuf, PathBuf, PathBuf) {
         let dir = self.root.join(&hash[0..2]).join(&hash[2..4]).join(hash.clone());
         let body = dir.join("body");
@@ -92,7 +117,7 @@ impl Storage for DiskCache {
         let (meta_res, hdr_res, file_res) = join!(
             fs::read(&meta_path),
             fs::read(&hdr_path),
-            // TODO: need to look at how to share this file descriptor between requests
+            // TODO: need to look into how this file descriptor can be shared between requests
             File::open(&body_path)
         );
 
@@ -199,7 +224,7 @@ impl Storage for DiskCache {
                 true
             },
             // Might need to do something else here...
-            Err(e) if e.kind() == std::io::ErrorKind::NotFound => false,
+            Err(e) if e.kind() == ErrorKind::NotFound => false,
             // Strictly speaking, setting existed = false here might not be correct
             Err(_) => false,
         };

@@ -5,14 +5,14 @@ mod tiered;
 mod utils;
 
 use crate::{
-    disk_cache::{inspector::start_disk_cache_inspector, DiskCache},
+    disk_cache::{cache_statistics::persist_cache_state, inspector::start_disk_cache_inspector, DiskCache},
     proxy::EdgeCdnProxy,
     tiered::{TieredStorage, WritePolicy},
     utils::{env_var_or_num, env_var_or_str},
 };
 
 use once_cell::sync::Lazy;
-use pingora::prelude::*;
+use pingora::{prelude::*, server::RunArgs};
 use pingora_cache::eviction::simple_lru::Manager as LruManager;
 use std::error::Error;
 use tracing_subscriber::EnvFilter;
@@ -21,7 +21,10 @@ use tracing_subscriber::EnvFilter;
 static DEFAULT_PROXY_HTTP_PORT: &'static [u16] = &[6188];
 static DEFAULT_PROXY_HTTPS_PORT: &'static [u16] = &[6143];
 static DEFAULT_CACHE_SIZE_BYTES: &'static usize = &(2 * 1024 * 1024 * 1024); // Default cache size = 2Gb
+static IN_ADDR_ANY: &'static str = "0.0.0.0";
 static DEFAULT_CACHE_DIR: &'static str = "./.cache";
+
+pub static CACHE_STATE_FILENAME: &str = "_cache_state.json";
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 // Define cache and eviction policy
@@ -68,17 +71,24 @@ fn main() -> Result<(), Box<dyn Error>> {
     let proxy = EdgeCdnProxy::new(proxy_http_port, proxy_https_port);
     let mut service = http_proxy_service(&server.configuration, proxy);
 
-    service.add_tcp(&format!("127.0.0.1:{proxy_http_port}"));
+    service.add_tcp(&format!("{IN_ADDR_ANY}:{proxy_http_port}"));
     service
-        .add_tls(&format!("127.0.0.1:{proxy_https_port}"), &cert_path, &key_path)
+        .add_tls(&format!("{IN_ADDR_ANY}:{proxy_https_port}"), &cert_path, &key_path)
         .unwrap();
     server.add_service(service);
 
     tracing::info!("Pingora proxies starting with cache size {} bytes", EVICT_CFG.max_bytes);
-    tracing::info!("    HTTP  proxy listening on 127.0.0.1:{}...", proxy_http_port);
-    tracing::info!("    HTTPS proxy listening on 127.0.0.1:{}...", proxy_https_port);
+    tracing::info!("    HTTP  proxy listening on {IN_ADDR_ANY}:{}...", proxy_http_port);
+    tracing::info!("    HTTPS proxy listening on {IN_ADDR_ANY}:{}...", proxy_https_port);
 
     start_disk_cache_inspector(*DISK_CACHE);
 
-    server.run_forever();
+    // Run until a SIGINT/SIGTERM/SIGQUIT is received
+    server.run(RunArgs::default());
+
+    tracing::info!("Pingora proxies shut down");
+    DISK_CACHE.set_uptime_now();
+    let _ = persist_cache_state(*DISK_CACHE);
+
+    Ok(())
 }
