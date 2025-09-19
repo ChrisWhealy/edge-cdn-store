@@ -61,7 +61,7 @@ pub struct EvictCfg {
 pub static EVICT_CFG: Lazy<EvictCfg> = Lazy::new(|| EvictCfg {
   max_bytes: env_var_or_num("CACHE_SIZE_BYTES", *DEFAULT_CACHE_SIZE_BYTES),
 });
-pub static EVICT: Lazy<&'static LruManager> = Lazy::new(|| Box::leak(Box::new(LruManager::new(EVICT_CFG.max_bytes))));
+pub static EVICT: Lazy<&'static LruManager> = Lazy::new(|| Box::leak(Box::new(LruManager::new(evict_cfg().max_bytes))));
 ```
 
 Where `LruManager` is an alias for `pingora_cache::eviction::simple_lru::Manager`.

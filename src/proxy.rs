@@ -1,5 +1,5 @@
 use crate::{
-    utils::{impl_trace, parse_host_authority, trace_fn_exit, trace_fn_exit_with_err, Trace}, EVICT,
+    utils::{impl_trace, parse_host_authority, scheme_from_hdr, trace_fn_exit, trace_fn_exit_with_err, Trace}, EVICT, LOCALHOST,
     TIERED,
 };
 
@@ -12,13 +12,10 @@ use pingora_cache::{storage::HandleHit, CacheKey, CacheMeta, ForcedInvalidationK
 use pingora_core::prelude::HttpPeer;
 use pingora_error::{Error, ErrorType};
 use std::time::{Duration, SystemTime};
-use crate::utils::scheme_from_hdr;
 
 const ONE_HOUR: Duration = Duration::from_secs(3600);
 const HTTPS: &str = "https";
 const HTTP: &str = "http";
-const LOOPBACK_IP: &str = "127.0.0.1";
-const LOCALHOST: &str = "localhost";
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 #[allow(dead_code)]
@@ -35,9 +32,9 @@ impl EdgeCdnProxy {
         <Self as Trace>::fn_enter_exit("new");
         let mut addresses = Vec::new();
 
-        addresses.push(format!("{}:{}", LOOPBACK_IP, listen_http));
         addresses.push(format!("{}:{}", LOCALHOST, listen_http));
-        addresses.push(format!("{}:{}", LOOPBACK_IP, listen_https));
+        addresses.push(format!("{}:{}", LOCALHOST, listen_http));
+        addresses.push(format!("{}:{}", LOCALHOST, listen_https));
         addresses.push(format!("{}:{}", LOCALHOST, listen_https));
 
         Self {
@@ -76,7 +73,7 @@ impl ProxyHttp for EdgeCdnProxy {
             Ok(host_and_port) => host_and_port,
             Err(ha_err) => {
                 trace_fn_exit(fn_name, &ha_err.to_string(), false);
-                return Err(ha_err)
+                return Err(ha_err);
             },
         };
 

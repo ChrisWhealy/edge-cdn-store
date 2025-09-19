@@ -3,7 +3,12 @@ mod handle_hit;
 mod handle_miss;
 pub mod inspector;
 
-use crate::{disk_cache::{cache_statistics::fetch_cache_state, handle_hit::DiskHitHandler, handle_miss::DiskMissHandler}, metrics::CacheMetrics, utils::{format_cache_key, impl_trace, trace_fn_exit_with_err, Trace}, EVICT_CFG};
+use crate::{
+    disk_cache::{cache_statistics::fetch_cache_state, handle_hit::DiskHitHandler, handle_miss::DiskMissHandler},
+    metrics::CacheMetrics,
+    utils::{format_cache_key, impl_trace, trace_fn_exit_with_err, Trace},
+    EVICT_CFG,
+};
 
 use async_trait::async_trait;
 use pingora_cache::{
@@ -16,7 +21,7 @@ use std::{
     any::Any,
     io::ErrorKind,
     path::{Path, PathBuf},
-    sync::atomic::{AtomicU64, Ordering},
+    sync::atomic::AtomicU64,
     sync::Arc,
 };
 use tokio::{fs, fs::File, join};
@@ -45,10 +50,10 @@ impl DiskCache {
         <Self as Trace>::fn_enter_exit("new");
 
         let prev_size = if let Ok(stats) = fetch_cache_state(root.as_ref().to_path_buf()) {
-            tracing::debug!("Fetched existing cache statistics: {:#?}", stats);
+            tracing::debug!("Using existing cache statistics: {:#?}", stats);
             stats.size_bytes_current as i64
         } else {
-            tracing::debug!("Previous cache statistics not found in {}", root.as_ref().display());
+            tracing::warn!("Previous cache statistics not found in {}", root.as_ref().display());
             0
         };
 
@@ -62,13 +67,6 @@ impl DiskCache {
             start_time: std::time::SystemTime::now(),
             uptime: AtomicU64::new(0),
             metrics: Arc::new(CacheMetrics::new(prev_size)),
-        }
-    }
-
-    // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-    pub fn set_uptime_now(&self) {
-        if let Ok(elapsed) = self.start_time.elapsed() {
-            self.uptime.store(elapsed.as_secs(), Ordering::Relaxed);
         }
     }
 

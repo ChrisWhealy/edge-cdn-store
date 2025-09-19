@@ -89,11 +89,11 @@ CACHE_SIZE_BYTES=$((1024 * 1024)); cargo run
 The CDN Edge Proxy can be configured using the following environment variables:
 
 | Environment Variable | Default Value                  | Description                                                                  |
-|----------------------|--------------------------------|------------------------------------------------------------------------------|
-| `CACHE_DIR`          | `./.cache`                     | The root directory for the disk cache<br>(relative to `$CARGO_MANIFEST_DIR`) |
-| `CACHE_SIZE_BYTES`   | `2 * 1024 * 1024 * 1024` (2Gb) | Default cache size                                                           |
-| `PROXY_HTTP_PORT`    | `6143`                         | Default port for HTTP connections                                            |
-| `PROXY_HTTPS_PORT`   | `6188`                         | Default port for HTTPS connections                                           |
+|--------------------|--------------------------------|------------------------------------------------------------------------------|
+| `CACHE_DIR`        | `./.cache`                     | The root directory for the disk cache<br>(relative to `$CARGO_MANIFEST_DIR`) |
+| `CACHE_SIZE_BYTES` | `2 * 1024 * 1024 * 1024` (2Gb) | Default cache size                                                           |
+| `PROXY_PORT_HTTP`  | `6143`                         | Default port for HTTP connections                                            |
+| `PROXY_PORT_HTTPS` | `6188`                         | Default port for HTTPS connections                                           |
 
 ---
 
