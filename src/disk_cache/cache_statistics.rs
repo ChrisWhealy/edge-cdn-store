@@ -11,7 +11,7 @@ use serde::{Deserialize, Serialize};
 use std::{
     io::{BufReader, Result},
     path::PathBuf,
-    sync::{atomic::Ordering, Arc},
+    sync::Arc,
 };
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
@@ -49,7 +49,7 @@ impl BackgroundService for PersistCacheOnShutdown {
         let cs = CacheStatistics {
             root: self.cache.root.clone(),
             start_time: self.cache.start_time,
-            uptime: std::time::Duration::from_secs(self.cache.uptime.load(Ordering::Relaxed)),
+            uptime: self.cache.start_time.elapsed().unwrap(),
             size_bytes_current: self.cache.metrics.size_bytes.get() as u64,
             size_bytes_max: eviction_manager_cfg().max_bytes as u64,
         };
