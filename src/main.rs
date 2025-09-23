@@ -26,8 +26,8 @@ fn main() -> Result<(), Box<dyn Error>> {
     let proxy_http_port: u16 = env_var_or_num("PROXY_HTTP_PORT", DEFAULT_PROXY_PORT_HTTP);
     let proxy_https_port: u16 = env_var_or_num("PROXY_HTTPS_PORT", DEFAULT_PROXY_PORT_HTTPS);
 
-    let cert_path = format!("{}/keys/server.crt", env!("CARGO_MANIFEST_DIR"));
-    let key_path = format!("{}/keys/server.pem", env!("CARGO_MANIFEST_DIR"));
+    let cert_path = format!("{}/server.crt", key_dir());
+    let key_path = format!("{}/server.pem", key_dir());
 
     let mut server = Server::new(None)?;
     server.bootstrap();
