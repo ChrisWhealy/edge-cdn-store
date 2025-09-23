@@ -36,7 +36,7 @@ fn main() -> Result<(), Box<dyn Error>> {
         .with_writer(nb)
         .init();
 
-    // Trap panic output whilst daemonized
+    // Trap panic output whilst running as a daemonized/background task
     std::panic::set_hook(Box::new(|info| {
         use std::io::Write;
         if let Ok(mut f) = std::fs::OpenOptions::new().create(true).append(true).open(path_to_panic_log()) {

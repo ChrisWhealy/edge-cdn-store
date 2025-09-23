@@ -10,8 +10,14 @@ This PoC requires that your server certificate and private key files are located
 
 ## Usage
 
+By default the server uses a runtime directory of `RUNTIME_DIR=/tmp/edge-cdn-store`
+
+All cached responses are stored in the directory `cache` immediately under `$RUNTIME_DIR`.
+
+### Start server
+
 ```bash
-cargo run
+./start.sh edge-cdn-store.yaml
 ```
 
 This starts three endpoints:
@@ -22,9 +28,17 @@ This starts three endpoints:
    - `http://localhost:8080/metrics` proxy metrics compatible with Prometheus  
    - `http://localhost:8080/cache` proxy cache contents (very basic, but functional)
 
-You will need to issue a `curl` command to the appropriate endpoint depending on whether you're accessing a secure or insecure address.
+### Stop server
 
-All cached responses are stored in the directory `.cache` immediately under `$CARGO_MANIFEST_DIR`.
+```bash
+./stop.sh
+```
+
+---
+
+## Testing Individual Requests
+
+Individual requests can be sent to the proxy server using the `curl` command.
 
 ### Secure
 
@@ -61,17 +75,17 @@ Set the HTTP request `Host` header to the the name of the server you wish to acc
 
 ---
 
-## Testing
+## Testing a Stream of Requests
 
-One way of testing this proxy is as follows:
+One way to test a stream of requests is as follows:
 
 1. Open the developer tools in your browser
 2. Select the network tab, ensure that the log is empty and that you are recording network requests
-3. Visit a web page such as <https://en.wikipedia.org/wiki/Main_Page>
+3. Visit a web page that does not require authentication (such as <https://en.wikipedia.org/wiki/Main_Page>)
 4. Stop recording the network log
 5. Export the network log as a `.har` file to some local directory
 6. Change into this repo's `./tests` directory
-7. Run `./har2curl.mjs` passing your `.har` file as the argument
+7. Run `./har2curl.mjs` passing the path to your `.har` file as the argument
 8. The URLs recorded in the `.har` file will be requested via a `curl` command through the proxy and the headers printed to the console.
 
 To test cache eviction, start the proxy with with a lower cache size, run several `.har` files through the cache, then look at the metrics page <http://localhost:8080/metrics> to see the number of evictions and the bytes evicted.
