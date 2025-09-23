@@ -34,6 +34,7 @@ pub fn tiered_cache() -> &'static  TieredStorage {
 pub enum WritePolicy {
     /// Only write into the primary local cache (default, simplest)
     PrimaryOnly,
+    #[allow(dead_code)]
     /// Write into both primary and secondary (best-effort on secondary)
     WriteThroughBoth,
 }

@@ -577,7 +577,6 @@ dependencies = [
  "async-trait",
  "bytes",
  "mime_guess",
- "once_cell",
  "pingora",
  "pingora-cache",
  "pingora-core",

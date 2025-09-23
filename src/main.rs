@@ -14,7 +14,7 @@ use crate::{
 };
 
 use crate::disk_cache::cache_statistics::PersistCacheOnShutdown;
-use pingora::{prelude::*, server::RunArgs};
+use pingora::prelude::*;
 use std::error::Error;
 use std::fs::OpenOptions;
 use std::sync::Arc;

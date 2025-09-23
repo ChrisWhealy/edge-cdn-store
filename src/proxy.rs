@@ -15,7 +15,7 @@ use pingora::{
 use pingora_cache::{storage::HandleHit, CacheKey, CacheMeta, ForcedInvalidationKind, NoCacheReason, RespCacheable};
 use pingora_core::prelude::HttpPeer;
 use pingora_error::{Error, ErrorType};
-use std::time::{Duration, SystemTime};
+use std::time::SystemTime;
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 #[allow(dead_code)]

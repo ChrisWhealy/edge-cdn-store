@@ -23,10 +23,7 @@ use std::{
     any::Any,
     io::ErrorKind,
     path::{Path, PathBuf},
-    sync::{
-        atomic::{AtomicU64, Ordering}, Arc,
-        OnceLock,
-    },
+    sync::{atomic::AtomicU64, Arc, OnceLock},
 };
 use tokio::{fs, fs::File, join};
 
@@ -65,6 +62,7 @@ pub fn eviction_manager() -> &'static LruManager {
 pub struct DiskCache {
     pub root: PathBuf,
     pub start_time: std::time::SystemTime,
+    #[allow(dead_code)]
     pub uptime: AtomicU64,
     pub metrics: Arc<CacheMetrics>,
 }
@@ -93,13 +91,6 @@ impl DiskCache {
             start_time: std::time::SystemTime::now(),
             uptime: AtomicU64::new(0),
             metrics: Arc::new(CacheMetrics::new(prev_size)),
-        }
-    }
-
-    // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-    pub fn set_uptime_now(&self) {
-        if let Ok(elapsed) = self.start_time.elapsed() {
-            self.uptime.store(elapsed.as_secs(), Ordering::Relaxed);
         }
     }
 
