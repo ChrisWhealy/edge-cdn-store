@@ -88,6 +88,8 @@ One way to test a stream of requests is as follows:
 7. Run `./har2curl.mjs` passing the path to your `.har` file as the argument
 8. The URLs recorded in the `.har` file will be requested via a `curl` command through the proxy and the headers printed to the console.
 
+## Testing Cache Eviction
+
 To test cache eviction, start the proxy with with a lower cache size, run several `.har` files through the cache, then look at the metrics page <http://localhost:8080/metrics> to see the number of evictions and the bytes evicted.
 
 For example, to set a cache size of 1Mb:
