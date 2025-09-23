@@ -23,8 +23,6 @@ use tracing_subscriber::EnvFilter;
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 fn main() -> Result<(), Box<dyn Error>> {
-    // tracing_subscriber::fmt().with_env_filter(EnvFilter::from_default_env()).init();
-
     // Logging needs to be fork-safe
     let log_file = OpenOptions::new()
         .create(true)
