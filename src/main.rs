@@ -25,7 +25,7 @@ static DEFAULT_PROXY_HTTP_PORT: &'static [u16] = &[6188];
 static DEFAULT_PROXY_HTTPS_PORT: &'static [u16] = &[6143];
 static DEFAULT_CACHE_SIZE_BYTES: &'static usize = &(2 * 1024 * 1024 * 1024); // Default cache size = 2Gb
 static IN_ADDR_ANY: IpAddr = IpAddr::V4(Ipv4Addr::UNSPECIFIED);
-static DEFAULT_CACHE_DIR: &'static str = "./.cache";
+static DEFAULT_CACHE_DIR: &'static str = "/tmp/edge-cdn-store/cache";
 
 pub static CACHE_STATE_FILENAME: &str = "_cache_state.json";
 

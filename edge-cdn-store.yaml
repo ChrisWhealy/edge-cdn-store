@@ -1,0 +1,5 @@
+version: 1
+daemon: false
+pid_file: /tmp/edge-cdn-store/server.pid
+upgrade_sock: /tmp/edge-cdn-store/upgrade.sock
+error_log: /tmp/edge-cdn-store/error.log
