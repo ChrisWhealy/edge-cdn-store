@@ -1,4 +1,4 @@
-use crate::{disk_cache::DiskCache, CACHE_STATE_FILENAME, EVICT_CFG};
+use crate::{disk_cache::DiskCache, eviction_manager_cfg, CACHE_STATE_FILENAME};
 
 use serde::{Deserialize, Serialize};
 use std::{
@@ -30,7 +30,7 @@ pub fn persist_cache_state(cache: &'static DiskCache) -> std::io::Result<()> {
         start_time: cache.start_time,
         uptime: std::time::Duration::from_secs(cache.uptime.load(Ordering::Relaxed)),
         size_bytes_current: cache.metrics.size_bytes.get() as u64,
-        size_bytes_max: EVICT_CFG.max_bytes as u64,
+        size_bytes_max: eviction_manager_cfg().max_bytes as u64,
     };
 
     serde_json::to_writer_pretty(writer, &cs).map_err(|e| Error::new(ErrorKind::Other, e))?;

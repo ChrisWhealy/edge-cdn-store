@@ -1,4 +1,4 @@
-use crate::disk_cache::DiskCache;
+use crate::{IN_ADDR_ANY, disk_cache::DiskCache};
 
 use mime_guess;
 use prometheus::{Encoder, TextEncoder};
@@ -9,7 +9,6 @@ use std::{
 };
 use tokio::{fs, io};
 use warp::{http::header, reply::Response as WarpResponse, Filter, Rejection, Reply};
-use crate::IN_ADDR_ANY;
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 pub fn start_disk_cache_inspector(cache: &'static DiskCache) {

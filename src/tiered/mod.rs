@@ -1,7 +1,10 @@
 // Add the fan_out module when the secondary cache is implemented
 // mod fan_out;
 
-use crate::utils::{impl_trace, Trace};
+use crate::{
+    disk_cache::disk_cache,
+    utils::{impl_trace, Trace},
+};
 
 use async_trait::async_trait;
 // use fan_out::*;
@@ -11,7 +14,19 @@ use pingora_cache::{
     CacheKey,
     CacheMeta,
 };
-use std::any::Any;
+use std::{any::Any, sync::OnceLock};
+
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+static TIERED: OnceLock<TieredStorage> = OnceLock::new();
+pub fn tiered_cache() -> &'static  TieredStorage {
+    TIERED.get_or_init(|| TieredStorage::new(
+            disk_cache(),
+            None,
+            // Some(remote_cache()),  // Need to implement this
+            WritePolicy::PrimaryOnly, // Switches to WriteThroughBoth when remote is available
+        )
+    )
+}
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 /// How writes should propagate when we get an origin MISS
@@ -32,9 +47,9 @@ pub enum WritePolicy {
 /// - On `get_miss_handler()`: by default we write only to primary.
 ///   The `WritePolicy::WriteThroughBoth` allows for an optional fan out write to secondary.
 pub struct TieredStorage {
-    primary: &'static (dyn Storage + Sync),
-    secondary: Option<&'static (dyn Storage + Sync)>,
-    write_policy: WritePolicy,
+    pub primary: &'static (dyn Storage + Sync),
+    pub secondary: Option<&'static (dyn Storage + Sync)>,
+    pub write_policy: WritePolicy,
 }
 
 impl_trace!(TieredStorage);

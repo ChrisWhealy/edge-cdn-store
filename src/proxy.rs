@@ -1,8 +1,12 @@
 use crate::{
-    utils::{impl_trace, parse_host_authority, trace_fn_exit, trace_fn_exit_with_err, Trace}, EVICT,
-    TIERED,
+    consts::{HTTP, HTTPS, ONE_HOUR},
+    disk_cache::eviction_manager,
+    statics::LOCALHOST,
+    tiered::tiered_cache,
+    utils::{impl_trace, parse_host_authority, scheme_from_hdr, trace_fn_exit, trace_fn_exit_with_err, Trace},
 };
 
+use crate::statics::{DEFAULT_PORT_HTTP, DEFAULT_PORT_HTTPS};
 use async_trait::async_trait;
 use pingora::{
     http::ResponseHeader,
@@ -12,13 +16,6 @@ use pingora_cache::{storage::HandleHit, CacheKey, CacheMeta, ForcedInvalidationK
 use pingora_core::prelude::HttpPeer;
 use pingora_error::{Error, ErrorType};
 use std::time::{Duration, SystemTime};
-use crate::utils::scheme_from_hdr;
-
-const ONE_HOUR: Duration = Duration::from_secs(3600);
-const HTTPS: &str = "https";
-const HTTP: &str = "http";
-const LOOPBACK_IP: &str = "127.0.0.1";
-const LOCALHOST: &str = "localhost";
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 #[allow(dead_code)]
@@ -35,9 +32,9 @@ impl EdgeCdnProxy {
         <Self as Trace>::fn_enter_exit("new");
         let mut addresses = Vec::new();
 
-        addresses.push(format!("{}:{}", LOOPBACK_IP, listen_http));
         addresses.push(format!("{}:{}", LOCALHOST, listen_http));
-        addresses.push(format!("{}:{}", LOOPBACK_IP, listen_https));
+        addresses.push(format!("{}:{}", LOCALHOST, listen_http));
+        addresses.push(format!("{}:{}", LOCALHOST, listen_https));
         addresses.push(format!("{}:{}", LOCALHOST, listen_https));
 
         Self {
@@ -76,7 +73,7 @@ impl ProxyHttp for EdgeCdnProxy {
             Ok(host_and_port) => host_and_port,
             Err(ha_err) => {
                 trace_fn_exit(fn_name, &ha_err.to_string(), false);
-                return Err(ha_err)
+                return Err(ha_err);
             },
         };
 
@@ -86,9 +83,9 @@ impl ProxyHttp for EdgeCdnProxy {
             .and_then(|sa| sa.as_inet().map(|inet| inet.port()))
             .map(|p| self.listen_https.eq(&p))
             .unwrap_or(false);
-        let use_https =
-            hdr_scheme.map(|s| s.eq_ignore_ascii_case(HTTPS)).unwrap_or(listener_https) || port_from_host == Some(443);
-        let port = port_from_host.unwrap_or(if use_https { 443 } else { 80 });
+        let use_https = hdr_scheme.map(|s| s.eq_ignore_ascii_case(HTTPS)).unwrap_or(listener_https)
+            || port_from_host == Some(DEFAULT_PORT_HTTPS);
+        let port = port_from_host.unwrap_or(if use_https { DEFAULT_PORT_HTTPS } else { DEFAULT_PORT_HTTP });
         let sni = if use_https { host_only.clone() } else { String::new() };
 
         tracing::debug!(
@@ -118,7 +115,7 @@ impl ProxyHttp for EdgeCdnProxy {
 
         // Cache must remain disabled for self-referencing requests
         if !self.self_addresses.iter().any(|addr| *addr == host) {
-            session.cache.enable(*TIERED, Some(*EVICT), None, None, None);
+            session.cache.enable(tiered_cache(), Some(eviction_manager()), None, None, None);
             tracing::debug!("     Disk cache enabled");
         }
 

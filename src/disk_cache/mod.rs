@@ -3,11 +3,18 @@ mod handle_hit;
 mod handle_miss;
 pub mod inspector;
 
-use crate::{disk_cache::{cache_statistics::fetch_cache_state, handle_hit::DiskHitHandler, handle_miss::DiskMissHandler}, metrics::CacheMetrics, utils::{format_cache_key, impl_trace, trace_fn_exit_with_err, Trace}, EVICT_CFG};
+use crate::{
+    disk_cache::{cache_statistics::fetch_cache_state, handle_hit::DiskHitHandler, handle_miss::DiskMissHandler},
+    metrics::CacheMetrics,
+    statics::{cache_dir, DEFAULT_CACHE_SIZE_BYTES, DEFAULT_READ_BUFFER_SIZE},
+    utils::{env_var_or_num, env_var_or_str},
+    utils::{format_cache_key, impl_trace, trace_fn_exit_with_err, Trace},
+};
 
 use async_trait::async_trait;
 use pingora_cache::{
-    key::{CacheHashKey, CompactCacheKey}, storage::{HitHandler, MissHandler, PurgeType, Storage},
+    eviction::simple_lru::Manager as LruManager, key::{CacheHashKey, CompactCacheKey},
+    storage::{HitHandler, MissHandler, PurgeType, Storage},
     trace::SpanHandle,
     CacheKey,
     CacheMeta,
@@ -16,12 +23,36 @@ use std::{
     any::Any,
     io::ErrorKind,
     path::{Path, PathBuf},
-    sync::atomic::{AtomicU64, Ordering},
-    sync::Arc,
+    sync::{
+        atomic::{AtomicU64, Ordering}, Arc,
+        OnceLock,
+    },
 };
 use tokio::{fs, fs::File, join};
 
-static DEFAULT_READ_BUFFER_SIZE: usize = 256 * 1024; // This will probably need to be made configurable
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+// Define cache and eviction policy
+static DISK_CACHE: OnceLock<DiskCache> = OnceLock::new();
+pub fn disk_cache() -> &'static DiskCache {
+    DISK_CACHE.get_or_init(|| DiskCache::new(env_var_or_str("CACHE_DIR", cache_dir())))
+}
+
+// Just use LRU at the moment
+pub struct EvictionManagerCfg {
+    pub max_bytes: usize,
+}
+
+static EVICTION_MANAGER_CFG: OnceLock<EvictionManagerCfg> = OnceLock::new();
+pub fn eviction_manager_cfg() -> &'static EvictionManagerCfg {
+    EVICTION_MANAGER_CFG.get_or_init(|| EvictionManagerCfg {
+        max_bytes: env_var_or_num("CACHE_SIZE_BYTES", *DEFAULT_CACHE_SIZE_BYTES),
+    })
+}
+
+static EVICTION_MANAGER: OnceLock<LruManager> = OnceLock::new();
+pub fn eviction_manager() -> &'static LruManager {
+    EVICTION_MANAGER.get_or_init(|| LruManager::new(eviction_manager_cfg().max_bytes))
+}
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 /// The cache directory structure is as follows, with each part of the cached data living in its own directory
@@ -53,7 +84,7 @@ impl DiskCache {
         };
 
         // Has the maximum cache size shrunk as a result of this restart?
-        if EVICT_CFG.max_bytes < prev_size as usize {
+        if eviction_manager_cfg().max_bytes < prev_size as usize {
             tracing::warn!("Maximum cache size is now smaller than the current cache size on disk!")
         }
 

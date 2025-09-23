@@ -4,10 +4,7 @@ use pingora_cache::{
     CacheKey,
 };
 use pingora_error::{Error, ErrorType};
-use std::fmt::Write;
-use std::str::FromStr;
-
-const HEX_CHARS: &[u8] = b"0123456789ABCDEF";
+use std::{fmt::Write, str::FromStr};
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 pub trait Trace {
@@ -33,6 +30,7 @@ macro_rules! impl_trace {
     };
 }
 
+use crate::consts::HEX_CHARS;
 pub(crate) use impl_trace;
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
