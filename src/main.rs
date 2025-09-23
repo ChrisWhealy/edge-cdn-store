@@ -7,17 +7,17 @@ mod tiered;
 mod utils;
 
 use crate::{
-    disk_cache::{
-        cache_statistics::persist_cache_state, disk_cache, eviction_manager_cfg, inspector::start_disk_cache_inspector,
-    },
+    disk_cache::{disk_cache, eviction_manager_cfg, inspector::start_disk_cache_inspector},
     proxy::EdgeCdnProxy,
     statics::*,
     utils::env_var_or_num,
 };
 
+use crate::disk_cache::cache_statistics::PersistCacheOnShutdown;
 use pingora::{prelude::*, server::RunArgs};
 use std::error::Error;
 use std::fs::OpenOptions;
+use std::sync::Arc;
 use tracing_appender::non_blocking::NonBlocking;
 use tracing_subscriber::EnvFilter;
 
@@ -63,6 +63,12 @@ fn main() -> Result<(), Box<dyn Error>> {
         .unwrap();
     server.add_service(service);
 
+    let persist_cache_svc = background_service(
+        "persist cache on shutdown",
+        PersistCacheOnShutdown { cache: Arc::new(disk_cache()) },
+    );
+    server.add_service(persist_cache_svc);
+
     tracing::info!(
         "Pingora proxies starting with cache size {} bytes",
         eviction_manager_cfg().max_bytes
@@ -73,11 +79,5 @@ fn main() -> Result<(), Box<dyn Error>> {
     start_disk_cache_inspector(disk_cache());
 
     // Run until a SIGINT/SIGTERM/SIGQUIT is received
-    server.run(RunArgs::default());
-
-    tracing::info!("Pingora proxies shut down");
-    disk_cache().set_uptime_now();
-    let _ = persist_cache_state(disk_cache());
-
-    Ok(())
+    server.run_forever();
 }

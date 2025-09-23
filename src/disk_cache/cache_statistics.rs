@@ -1,14 +1,21 @@
-use crate::{disk_cache::DiskCache, eviction_manager_cfg, CACHE_STATE_FILENAME};
+use crate::{
+    disk_cache::DiskCache,
+    eviction_manager_cfg,
+    utils::{impl_trace, Trace},
+    CACHE_STATE_FILENAME,
+};
 
+use async_trait::async_trait;
+use pingora_core::{server::ShutdownWatch, services::background::BackgroundService};
 use serde::{Deserialize, Serialize};
 use std::{
-    io::{BufReader, BufWriter, Error, ErrorKind},
+    io::{BufReader, Result},
     path::PathBuf,
-    sync::atomic::Ordering,
+    sync::{atomic::Ordering, Arc},
 };
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-/// Persist cache data
+/// Persisted cache values
 #[derive(Debug, Serialize, Deserialize)]
 pub struct CacheStatistics {
     pub root: PathBuf,
@@ -19,27 +26,44 @@ pub struct CacheStatistics {
 }
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-pub fn persist_cache_state(cache: &'static DiskCache) -> std::io::Result<()> {
-    let mut path = PathBuf::from(cache.root.as_path());
-    path.push(CACHE_STATE_FILENAME);
+/// Persist cache data
+pub struct PersistCacheOnShutdown {
+    pub cache: Arc<&'static DiskCache>,
+}
 
-    let file = std::fs::File::create(path)?;
-    let writer = BufWriter::new(file);
-    let cs = CacheStatistics {
-        root: cache.root.clone(),
-        start_time: cache.start_time,
-        uptime: std::time::Duration::from_secs(cache.uptime.load(Ordering::Relaxed)),
-        size_bytes_current: cache.metrics.size_bytes.get() as u64,
-        size_bytes_max: eviction_manager_cfg().max_bytes as u64,
-    };
+impl_trace!(PersistCacheOnShutdown);
 
-    serde_json::to_writer_pretty(writer, &cs).map_err(|e| Error::new(ErrorKind::Other, e))?;
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+/// When the Pingora server shuts down or upgrades, write the cache statistics to disk
+#[async_trait]
+impl BackgroundService for PersistCacheOnShutdown {
+    async fn start(&self, mut shutdown: ShutdownWatch) {
+        <Self as Trace>::fn_enter("start");
 
-    Ok(())
+        // Wait for server to begin graceful shutdown/upgrade
+        let _ = shutdown.changed().await;
+
+        let mut path = PathBuf::from(self.cache.root.as_path());
+        path.push(CACHE_STATE_FILENAME);
+
+        let cs = CacheStatistics {
+            root: self.cache.root.clone(),
+            start_time: self.cache.start_time,
+            uptime: std::time::Duration::from_secs(self.cache.uptime.load(Ordering::Relaxed)),
+            size_bytes_current: self.cache.metrics.size_bytes.get() as u64,
+            size_bytes_max: eviction_manager_cfg().max_bytes as u64,
+        };
+
+        if let Ok(json) = serde_json::to_string_pretty(&cs) {
+            let _ = tokio::fs::write(&path, json).await;
+        }
+
+        <Self as Trace>::fn_exit("start");
+    }
 }
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-pub fn fetch_cache_state(root: PathBuf) -> std::io::Result<CacheStatistics> {
+pub fn fetch_cache_state(root: PathBuf) -> Result<CacheStatistics> {
     let mut path = PathBuf::from(root.as_path());
     path.push(CACHE_STATE_FILENAME);
 

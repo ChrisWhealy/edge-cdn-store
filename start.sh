@@ -2,11 +2,12 @@
 set -euo pipefail
 
 RUNTIME_DIR="/tmp/edge-cdn-store"
-CONF_SRC="${1:-conf.yaml}"
 
 mkdir -p "$RUNTIME_DIR/cache"
 mkdir -p "$RUNTIME_DIR/keys"
 chmod -R 700 $RUNTIME_DIR
+
+CONF_SRC="${1:-conf.yaml}"
 
 if [[ ! -f "$CONF_SRC" ]]; then
   echo "⚠️   Config file not found: $CONF_SRC"
@@ -22,5 +23,7 @@ else
 
   cp "$PWD"/keys/server.* "$RUNTIME_DIR/keys/"
   cp "$CONF_SRC" "$RUNTIME_DIR/conf.yaml"
-  exec "$(pwd)/target/release/edge-cdn-store" --conf "$RUNTIME_DIR/conf.yaml"
+
+  "$(pwd)/target/release/edge-cdn-store" --conf "$RUNTIME_DIR/conf.yaml" &
+  echo "$!" > "$RUNTIME_DIR/server.pid"
 fi
