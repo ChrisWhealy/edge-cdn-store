@@ -23,17 +23,17 @@ pub fn cache_dir() -> &'static str {
     CACHE_DIR.get_or_init(|| format!("{RUNTIME_DIR}/cache"))
 }
 
-static KEY_DIR: OnceLock<String> = OnceLock::new();
-pub fn key_dir() -> &'static str {
-    KEY_DIR.get_or_init(|| format!("{RUNTIME_DIR}/keys"))
+static PATH_TO_SERVER_KEYS: OnceLock<String> = OnceLock::new();
+pub fn server_keys_dir() -> &'static str {
+    PATH_TO_SERVER_KEYS.get_or_init(|| format!("{RUNTIME_DIR}/keys"))
 }
 
 static PATH_TO_APP_LOG: OnceLock<String> = OnceLock::new();
 pub fn path_to_app_log() -> &'static str {
-    KEY_DIR.get_or_init(|| format!("{RUNTIME_DIR}/app.log"))
+    PATH_TO_APP_LOG.get_or_init(|| format!("{RUNTIME_DIR}/app.log"))
 }
 
 static PATH_TO_PANIC_LOG: OnceLock<String> = OnceLock::new();
 pub fn path_to_panic_log() -> &'static str {
-    KEY_DIR.get_or_init(|| format!("{RUNTIME_DIR}/panic.log"))
+    PATH_TO_PANIC_LOG.get_or_init(|| format!("{RUNTIME_DIR}/panic.log"))
 }

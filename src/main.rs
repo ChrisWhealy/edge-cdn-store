@@ -17,17 +17,41 @@ use crate::{
 
 use pingora::{prelude::*, server::RunArgs};
 use std::error::Error;
+use std::fs::OpenOptions;
+use tracing_appender::non_blocking::NonBlocking;
 use tracing_subscriber::EnvFilter;
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 fn main() -> Result<(), Box<dyn Error>> {
-    tracing_subscriber::fmt().with_env_filter(EnvFilter::from_default_env()).init();
+    // tracing_subscriber::fmt().with_env_filter(EnvFilter::from_default_env()).init();
+
+    // Logging needs to be fork-safe
+    let log_file = OpenOptions::new()
+        .create(true)
+        .append(true)
+        .open(path_to_app_log())
+        .expect("open app.log");
+    let (nb, _guard): (NonBlocking, _) = tracing_appender::non_blocking(log_file);
+
+    tracing_subscriber::fmt()
+        .with_env_filter(EnvFilter::from_default_env())
+        .with_writer(nb)
+        .init();
+
+    // Trap panic output whilst daemonized
+    std::panic::set_hook(Box::new(|info| {
+        use std::io::Write;
+        if let Ok(mut f) = std::fs::OpenOptions::new().create(true).append(true).open(path_to_panic_log()) {
+            let _ = writeln!(f, "PANIC: {info}");
+            let _ = writeln!(f, "Backtrace: {:?}", std::backtrace::Backtrace::capture());
+        }
+    }));
 
     let proxy_http_port: u16 = env_var_or_num("PROXY_HTTP_PORT", DEFAULT_PROXY_PORT_HTTP);
     let proxy_https_port: u16 = env_var_or_num("PROXY_HTTPS_PORT", DEFAULT_PROXY_PORT_HTTPS);
 
-    let cert_path = format!("{}/server.crt", key_dir());
-    let key_path = format!("{}/server.pem", key_dir());
+    let cert_path = format!("{}/server.crt", server_keys_dir());
+    let key_path = format!("{}/server.pem", server_keys_dir());
 
     let mut server = Server::new(None)?;
     server.bootstrap();
