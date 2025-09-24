@@ -7,19 +7,23 @@ mod tiered;
 mod utils;
 
 use crate::{
-    disk_cache::{disk_cache, eviction_manager_cfg, inspector::start_disk_cache_inspector},
+    consts::{DEFAULT_PROXY_PORT_HTTP, DEFAULT_PROXY_PORT_HTTPS},
+    disk_cache::{
+        cache_statistics::PersistCacheOnShutdown, disk_cache, eviction_manager_cfg,
+        inspector::start_disk_cache_inspector,
+    },
     proxy::EdgeCdnProxy,
     statics::*,
     utils::env_var_or_num,
 };
 
-use crate::disk_cache::cache_statistics::PersistCacheOnShutdown;
 use pingora::prelude::*;
 use std::error::Error;
 use std::fs::OpenOptions;
 use std::sync::Arc;
 use tracing_appender::non_blocking::NonBlocking;
 use tracing_subscriber::EnvFilter;
+use crate::disk_cache::inspector::StopInspectorOnShutdown;
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 fn main() -> Result<(), Box<dyn Error>> {
@@ -69,14 +73,21 @@ fn main() -> Result<(), Box<dyn Error>> {
     );
     server.add_service(persist_cache_svc);
 
+    // Start inspector on port 8080
+    let inspector = start_disk_cache_inspector((IN_ADDR_ANY, 8080).into(), Arc::new(disk_cache()));
+
+    let stop_inspector_svc = background_service(
+        "stop inspector on shutdown",
+        StopInspectorOnShutdown { inspector: inspector.clone() },
+    );
+    server.add_service(stop_inspector_svc);
+
     tracing::info!(
         "Pingora proxies starting with cache size {} bytes",
         eviction_manager_cfg().max_bytes
     );
     tracing::info!("    HTTP  proxy listening on {IN_ADDR_ANY}:{}...", proxy_http_port);
     tracing::info!("    HTTPS proxy listening on {IN_ADDR_ANY}:{}...", proxy_https_port);
-
-    start_disk_cache_inspector(disk_cache());
 
     // Run until a SIGINT/SIGTERM/SIGQUIT is received
     server.run_forever();

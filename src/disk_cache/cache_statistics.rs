@@ -1,8 +1,8 @@
 use crate::{
+    consts::CACHE_STATE_FILENAME,
     disk_cache::DiskCache,
     eviction_manager_cfg,
     utils::{impl_trace, Trace},
-    CACHE_STATE_FILENAME,
 };
 
 use async_trait::async_trait;
@@ -40,7 +40,8 @@ impl BackgroundService for PersistCacheOnShutdown {
     async fn start(&self, mut shutdown: ShutdownWatch) {
         <Self as Trace>::fn_enter("start");
 
-        // Wait for server to begin graceful shutdown/upgrade
+        // Wait for graceful shutdown
+        // This is only fired for SIGTERM or SIGQUIT, NOT SIGINT
         let _ = shutdown.changed().await;
 
         let mut path = PathBuf::from(self.cache.root.as_path());
@@ -56,6 +57,8 @@ impl BackgroundService for PersistCacheOnShutdown {
 
         if let Ok(json) = serde_json::to_string_pretty(&cs) {
             let _ = tokio::fs::write(&path, json).await;
+        } else {
+            tracing::error!("Failed to serialize CacheStatistics to JSON");
         }
 
         <Self as Trace>::fn_exit("start");

@@ -4,11 +4,11 @@ mod handle_miss;
 pub mod inspector;
 
 use crate::{
+    consts::{DEFAULT_CACHE_SIZE_BYTES, DEFAULT_READ_BUFFER_SIZE},
     disk_cache::{cache_statistics::fetch_cache_state, handle_hit::DiskHitHandler, handle_miss::DiskMissHandler},
     metrics::CacheMetrics,
-    statics::{cache_dir, DEFAULT_CACHE_SIZE_BYTES, DEFAULT_READ_BUFFER_SIZE},
-    utils::{env_var_or_num, env_var_or_str},
-    utils::{format_cache_key, impl_trace, trace_fn_exit_with_err, Trace},
+    statics::cache_dir,
+    utils::{env_var_or_num, env_var_or_str, format_cache_key, impl_trace, trace_fn_exit_with_err, Trace},
 };
 
 use async_trait::async_trait;
@@ -42,7 +42,7 @@ pub struct EvictionManagerCfg {
 static EVICTION_MANAGER_CFG: OnceLock<EvictionManagerCfg> = OnceLock::new();
 pub fn eviction_manager_cfg() -> &'static EvictionManagerCfg {
     EVICTION_MANAGER_CFG.get_or_init(|| EvictionManagerCfg {
-        max_bytes: env_var_or_num("CACHE_SIZE_BYTES", *DEFAULT_CACHE_SIZE_BYTES),
+        max_bytes: env_var_or_num("CACHE_SIZE_BYTES", DEFAULT_CACHE_SIZE_BYTES),
     })
 }
 

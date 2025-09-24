@@ -1,12 +1,11 @@
 use crate::{
-    consts::{HTTP, HTTPS, ONE_HOUR},
+    consts::{DEFAULT_PORT_HTTP, DEFAULT_PORT_HTTPS, HTTP, HTTPS, ONE_HOUR},
     disk_cache::eviction_manager,
     statics::LOCALHOST,
     tiered::tiered_cache,
     utils::{impl_trace, parse_host_authority, scheme_from_hdr, trace_fn_exit, trace_fn_exit_with_err, Trace},
 };
 
-use crate::statics::{DEFAULT_PORT_HTTP, DEFAULT_PORT_HTTPS};
 use async_trait::async_trait;
 use pingora::{
     http::ResponseHeader,

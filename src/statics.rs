@@ -1,22 +1,15 @@
+use crate::consts::RUNTIME_DIR;
+
 use std::{
     net::{IpAddr, Ipv4Addr},
     sync::OnceLock,
 };
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-pub static DEFAULT_PROXY_PORT_HTTP: u16 = 6188;
-pub static DEFAULT_PROXY_PORT_HTTPS: u16 = 6143;
-pub static DEFAULT_PORT_HTTP: u16 = 80;
-pub static DEFAULT_PORT_HTTPS: u16 = 443;
-pub static DEFAULT_CACHE_SIZE_BYTES: &'static usize = &(2 * 1024 * 1024 * 1024); // Default cache size = 2Gb
 pub static IN_ADDR_ANY: IpAddr = IpAddr::V4(Ipv4Addr::UNSPECIFIED);
 pub static LOCALHOST: IpAddr = IpAddr::V4(Ipv4Addr::LOCALHOST);
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-pub static DEFAULT_READ_BUFFER_SIZE: usize = 256 * 1024; // This will probably need to be made configurable
-pub static CACHE_STATE_FILENAME: &str = "_cache_state.json";
-
-static RUNTIME_DIR: &'static str = "/tmp/edge-cdn-store";
 
 static CACHE_DIR: OnceLock<String> = OnceLock::new();
 pub fn cache_dir() -> &'static str {

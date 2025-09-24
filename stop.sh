@@ -5,9 +5,10 @@ RUNTIME_DIR="/tmp/edge-cdn-store"
 PID_FILE="$RUNTIME_DIR/server.pid"
 
 if [[ ! -f "$PID_FILE" ]]; then
-  echo "⚠️   Failed to stop server: Missing file $PID_FILE"
+  echo "⚠️  Unable to stop server: Missing file $PID_FILE"
 else
-  kill -TERM $(cat "$PID_FILE")
+  PID=$(cat "$PID_FILE")
   rm "$PID_FILE"
+  kill -TERM $PID
 fi
 
