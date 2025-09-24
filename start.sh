@@ -26,4 +26,5 @@ else
 
   "$(pwd)/target/release/edge-cdn-store" --conf "$RUNTIME_DIR/conf.yaml" &
   echo "$!" > "$RUNTIME_DIR/server.pid"
+  echo "✅  Proxy server started"
 fi

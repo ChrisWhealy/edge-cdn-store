@@ -10,5 +10,6 @@ else
   PID=$(cat "$PID_FILE")
   rm "$PID_FILE"
   kill -TERM $PID
+  echo "✅  Proxy server stopped"
 fi
 
