@@ -108,6 +108,12 @@ pub fn parse_host_authority(raw: &str) -> pingora_error::Result<(String, Option<
 }
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+// Encode characters that must not be interpreted as HTML
+pub fn html_escape(s: &str) -> String {
+    s.replace('&', "&amp;").replace('<', "&lt;").replace('>', "&gt;")
+}
+
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 // Development helper functions
 pub fn trace_fn_exit(fn_name: &str, err_msg: &str, trace_fn_enter: bool) {
     if trace_fn_enter {

@@ -1,7 +1,6 @@
 pub(crate) mod cache_statistics;
 mod handle_hit;
 mod handle_miss;
-pub mod inspector;
 
 use crate::{
     consts::{DEFAULT_CACHE_SIZE_BYTES, DEFAULT_READ_BUFFER_SIZE},

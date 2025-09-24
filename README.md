@@ -27,6 +27,7 @@ This starts three endpoints:
 * `http://localhost:8080` Proxy inspection
    - `http://localhost:8080/version` Edge CDN Cache version
    - `http://localhost:8080/health` Proxy health status
+   - `http://localhost:8080/statss` Proxy statistics
    - `http://localhost:8080/metrics` Proxy metrics compatible with Prometheus
    - `http://localhost:8080/cache` Proxy cache contents (very basic, but functional)
 

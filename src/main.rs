@@ -5,12 +5,12 @@ mod proxy;
 mod statics;
 mod tiered;
 mod utils;
+pub mod inspector;
 
 use crate::{
     consts::{DEFAULT_PROXY_PORT_HTTP, DEFAULT_PROXY_PORT_HTTPS},
     disk_cache::{
         cache_statistics::PersistCacheOnShutdown, disk_cache, eviction_manager_cfg,
-        inspector::start_disk_cache_inspector,
     },
     proxy::EdgeCdnProxy,
     statics::*,
@@ -23,7 +23,8 @@ use std::fs::OpenOptions;
 use std::sync::Arc;
 use tracing_appender::non_blocking::NonBlocking;
 use tracing_subscriber::EnvFilter;
-use crate::disk_cache::inspector::StopInspectorOnShutdown;
+use inspector::start_disk_cache_inspector;
+use inspector::StopInspectorOnShutdown;
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 fn main() -> Result<(), Box<dyn Error>> {
