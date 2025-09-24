@@ -22,11 +22,13 @@ All cached responses are stored in the directory `cache` immediately under `$RUN
 
 This starts three endpoints:
 
-* `http://localhost:6188` insecure proxy endpoint  
-* `https://localhost:6143` TLS proxy endpoint  
-* `http://localhost:8080` proxy inspection  
-   - `http://localhost:8080/metrics` proxy metrics compatible with Prometheus  
-   - `http://localhost:8080/cache` proxy cache contents (very basic, but functional)
+* `http://localhost:6188` insecure proxy endpoint
+* `https://localhost:6143` TLS proxy endpoint
+* `http://localhost:8080` Proxy inspection
+   - `http://localhost:8080/version` Edge CDN Cache version
+   - `http://localhost:8080/health` Proxy health status
+   - `http://localhost:8080/metrics` Proxy metrics compatible with Prometheus
+   - `http://localhost:8080/cache` Proxy cache contents (very basic, but functional)
 
 ### Stop server
 
