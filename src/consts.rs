@@ -1,6 +1,4 @@
 use std::time::Duration;
-use pingora_cache::cache_control::Cacheable::Default;
-use crate::utils::env_var_or_str;
 
 pub const DEFAULT_PROXY_PORT_HTTP: u16 = 6188;
 pub const DEFAULT_PROXY_PORT_HTTPS: u16 = 6143;

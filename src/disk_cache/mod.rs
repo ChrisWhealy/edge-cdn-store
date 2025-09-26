@@ -8,7 +8,7 @@ use crate::{
     logger::{impl_trace, trace_fn_exit_with_err, Trace},
     metrics::CacheMetrics,
     statics::cache_dir,
-    utils::{env_var_or_num, env_var_or_str, format_cache_key},
+    utils::{env_var_or_num, format_cache_key},
 };
 
 use async_trait::async_trait;
