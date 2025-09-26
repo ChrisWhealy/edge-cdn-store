@@ -146,7 +146,7 @@ This has several important consequences for the software architecture:
    This means for instance, the cache inspector must run as a Pingora background service rather than spinning up a separate Tokio runtime in which a `warp` server runs.
    This actually makes it simpler to shut the inspector down.
 * Any file descriptors opened before the fork are closed and are therefore no longer available to the server.
-   This includes any file descriptors for `stdout` and `stderr`.
+   This includes the file descriptors for `stdout` and `stderr`.
    Consequently, the logger must direct all its output to a file that is opened after the fork happens.
 * After the fork, if the logger tries to write to `stdout` and `stderr`, the server crashes silently.
 * Trapping panics must be done by defining an explicit panic handler in `std::panic::set_hook()`
