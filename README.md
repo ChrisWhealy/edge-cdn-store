@@ -10,8 +10,8 @@ This PoC requires that your server certificate and private key files are located
 
 ## Usage
 
-By default the server uses a runtime directory defined in the environment variable `EDGE_RUNTIME_DIR`.
-If this variable is unset or empty, the default runtime directory will be `/tmp/edge-cdn-store`
+The server will start up using the value in the environment variable `EDGE_RUNTIME_DIR` as its runtime directory.
+If this variable is unset or empty, the runtime directory defaults to `/tmp/edge-cdn-store`.
 
 All cached responses are stored in the directory `$EDGE_RUNTIME_DIR/cache`.
 
@@ -21,7 +21,7 @@ All cached responses are stored in the directory `$EDGE_RUNTIME_DIR/cache`.
 ./start.sh edge-cdn-store.yaml
 ```
 
-This starts the Edge CDN Store proxy as a background task that make the following three endpoints available:
+This starts the Edge CDN Store proxy as a background task that makes the following three endpoints available:
 
 * `http://localhost:6188` Insecure (HTTP) proxy endpoint
 * `https://localhost:6143` TLS (HTTPS) proxy endpoint
@@ -137,13 +137,33 @@ If the Pingora Proxy is unsuccessful after a certain number of retries, it panic
 
 ## Development Notes on Running this Proxy as a Daemon
 
-[According to the documentation](https://github.com/cloudflare/pingora/blob/main/docs/user_guide/daemon.md), if you set `daemon: true` in `edge-cdn-store.yaml` file, then start the server with the argument `--conf ./edge-cdn-store.yaml`, the Pingora framework will fork the server process when `server.run_forever()` is encountered.
+[According to the documentation](https://github.com/cloudflare/pingora/blob/main/docs/user_guide/daemon.md), if you set `daemon: true` in `edge-cdn-store.yaml`, then start the server with the argument `--conf ./edge-cdn-store.yaml`, the Pingora framework will transform the server process into a daemon by forking it.
+This happens when `server.run_forever()` is encountered.
 
-Unfortunately, once running as a daemon, the software becomes very fragile (on macOS at least).
+This has several important consequences for the software architecture:
+* Only the process that calls `fork()` survives.
+* Any other processes or Tokio runtimes created prior to the fork are shut down. 
+   This means the cache inspector must run as a Pingora background service rather than a `warp` server running in its own runtime.
+* Any file descriptors opened before the fork are closed and are therefore no longer available to the server.
+   This includes any file descriptors for `stdin` and `stdout`.
+   Consequently, the logger must direct all its output to a file that is opened after the fork happens.
+* Trapping panics must be done by defining an explicit panic handler in `std::panic::set_hook()`
+* Trapping errors is trickier as not all runtime errors can be caught with `std::panic::catch_unwind()`
 
-I found when `upstream_peer()` in `pingora_proxy::ProxyHttp` calls `UpstreamPeer::new()`, the server would crash silently.
+Unfortunately, once running as a daemon (on macOS at least), the software became very fragile and would crash silently.
+For example, in `pingora_proxy::ProxyHttp::upstream_peer()` calls `UpstreamPeer::new()`, the server would crash silently.
 
-I was also disappointed to discover that the `daemonize` crate in the Pingora framework has been marked as unmaintained: <https://github.com/cloudflare/pingora/issues/699>
+If you look at the implementation of `HttpPeer::new()`, there is an unchecked `unwrap()` statement with a TODO comment simply saying "handle error".
+
+```rust
+pub fn new<A: ToInetSocketAddrs>(address: A, tls: bool, sni: String) -> Self {
+    let mut addrs_iter = address.to_socket_addrs().unwrap(); //TODO: handle error
+    let addr = addrs_iter.next().unwrap();
+    Self::new_from_sockaddr(SocketAddr::Inet(addr), tls, sni)
+}
+```
+
+I was further disappointed to discover that the `daemonize` crate in the Pingora framework has been marked as unmaintained: <https://github.com/cloudflare/pingora/issues/699>
 
 Consequently, I have abandoned the attempt to get this server to run as a daemon.
 It runs perfectly well as a background service.
