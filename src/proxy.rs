@@ -89,6 +89,7 @@ impl ProxyHttp for EdgeCdnProxy {
 
         tracing::debug!("     origin: {}:{} tls={} sni={}", host_only, port, use_https, sni);
 
+        // This statement causes a silent crash when running as a daemon... 🤔
         let peer = HttpPeer::new((host_only, port), use_https, sni);
 
         <Self as Trace>::fn_exit(fn_name);
