@@ -143,7 +143,8 @@ This happens when `server.run_forever()` is encountered.
 This has several important consequences for the software architecture:
 * Only the process that calls `fork()` survives.
 * Any other processes or Tokio runtimes created prior to the fork are shut down. 
-   This means the cache inspector must run as a Pingora background service rather than a `warp` server running in its own runtime.
+   This means for instance, the cache inspector must run as a Pingora background service rather than spinning up a separate Tokio runtime in which a `warp` server runs.
+   This actually makes it simpler to shut the inspector dowm.
 * Any file descriptors opened before the fork are closed and are therefore no longer available to the server.
    This includes any file descriptors for `stdout` and `stderr`.
    Consequently, the logger must direct all its output to a file that is opened after the fork happens.
