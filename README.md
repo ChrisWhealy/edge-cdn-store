@@ -151,7 +151,7 @@ This has several important consequences for the software architecture:
 * Trapping panics must be done by defining an explicit panic handler in `std::panic::set_hook()`
 * Trapping errors is trickier as not all runtime errors can be caught with `std::panic::catch_unwind()`
 
-Unfortunately, once running as a daemon (on macOS at least), the software became very fragile and would crash often silently.
+Unfortunately, once running as a daemon (on macOS at least), the software became very fragile and would crash silently.
 For example, in `pingora_proxy::ProxyHttp::upstream_peer()`, the call to `UpstreamPeer::new()` would crash the server.
 
 I was further disappointed to discover that the `daemonize` crate in the Pingora framework has been marked as unmaintained: <https://github.com/cloudflare/pingora/issues/699>
