@@ -1,6 +1,6 @@
 # PoC Edge CDN Cache
 
-An reverse proxy PoC based on Cloudflare's [Pingora Framework](https://github.com/cloudflare/pingora).
+A reverse proxy PoC based on Cloudflare's [Pingora Framework](https://github.com/cloudflare/pingora).
 
 The proposal is described [here](docs/README.md)
 
