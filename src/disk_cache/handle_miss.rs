@@ -1,4 +1,4 @@
-use crate::{metrics::CacheMetrics, utils::{Trace, impl_trace, trace_fn_exit_with_err}};
+use crate::{metrics::CacheMetrics, logger::{Trace, impl_trace, trace_fn_exit_with_err}};
 
 use async_trait::async_trait;
 use bytes::Bytes;
@@ -62,12 +62,12 @@ impl HandleMiss for DiskMissHandler {
         let mut file = match fs::OpenOptions::new().append(true).open(&self.tmp_path).await {
             Ok(f) => f,
             Err(e) => {
-                return trace_fn_exit_with_err(fn_name, &format!("Can't open tmp file for append: {e}"), true);
+                return trace_fn_exit_with_err(fn_name, &format!("Can't open tmp file for append: {e}"), None,true);
             },
         };
 
         if let Err(e) = file.write_all(&data).await {
-            return trace_fn_exit_with_err(fn_name, &format!("Error writing to tmp file: {e}"), true);
+            return trace_fn_exit_with_err(fn_name, &format!("Error writing to tmp file: {e}"), None, true);
         }
 
         self.tmp_bytes_written += data.len();
@@ -96,19 +96,19 @@ impl HandleMiss for DiskMissHandler {
             let mut tmp_file = match fs::File::open(&self.tmp_path).await {
                 Ok(f) => f,
                 Err(e) => {
-                    return trace_fn_exit_with_err(fn_name, &format!("Can't open tmp file for append: {e}"), false);
+                    return trace_fn_exit_with_err(fn_name, &format!("Can't open tmp file for append: {e}"), None, false);
                 },
             };
 
             let mut cache_file = match fs::File::create(&self.body_path).await {
                 Ok(f) => f,
                 Err(e) => {
-                    return trace_fn_exit_with_err(fn_name, &format!("Can't create cache file: {e}"), false);
+                    return trace_fn_exit_with_err(fn_name, &format!("Can't create cache file: {e}"), None,false);
                 },
             };
 
             if let Err(e) = tokio::io::copy(&mut tmp_file, &mut cache_file).await {
-                return trace_fn_exit_with_err(fn_name, &format!("Failed to copy tmp to cache body: {e}"), false);
+                return trace_fn_exit_with_err(fn_name, &format!("Failed to copy tmp to cache body: {e}"), None,false);
             }
 
             // clean up tmp
@@ -117,11 +117,11 @@ impl HandleMiss for DiskMissHandler {
 
         // Write meta parts
         if let Err(e) = fs::write(&self.meta_path, &self.meta_internal).await {
-            return trace_fn_exit_with_err(fn_name, &format!("Failed to write cache meta: {e}"), false);
+            return trace_fn_exit_with_err(fn_name, &format!("Failed to write cache meta: {e}"), None, false);
         }
 
         if let Err(e) = fs::write(&self.hdr_path, &self.meta_header).await {
-            return trace_fn_exit_with_err(fn_name, &format!("Failed to write cache hdr: {e}"), false);
+            return trace_fn_exit_with_err(fn_name, &format!("Failed to write cache hdr: {e}"), None, false);
         }
 
         self.metrics.inserts.inc();

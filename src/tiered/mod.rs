@@ -3,7 +3,7 @@
 
 use crate::{
     disk_cache::disk_cache,
-    utils::{impl_trace, Trace},
+    logger::{impl_trace, Trace},
 };
 
 use async_trait::async_trait;
@@ -18,14 +18,15 @@ use std::{any::Any, sync::OnceLock};
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 static TIERED: OnceLock<TieredStorage> = OnceLock::new();
-pub fn tiered_cache() -> &'static  TieredStorage {
-    TIERED.get_or_init(|| TieredStorage::new(
+pub fn tiered_cache() -> &'static TieredStorage {
+    TIERED.get_or_init(|| {
+        TieredStorage::new(
             disk_cache(),
             None,
             // Some(remote_cache()),  // Need to implement this
             WritePolicy::PrimaryOnly, // Switches to WriteThroughBoth when remote is available
         )
-    )
+    })
 }
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -

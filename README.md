@@ -6,13 +6,14 @@ The proposal is described [here](docs/README.md)
 
 ## Generate TLS Certificate
 
-This PoC requires that your server certificate and private key files are located in the `./keys` directory as `server.crt` and `server.pem`.
+This PoC requires that your server certificate and private key files are located in the repo's `./keys` directory as `server.crt` and `server.pem`.
 
 ## Usage
 
-By default the server uses a runtime directory of `RUNTIME_DIR=/tmp/edge-cdn-store`
+By default the server uses a runtime directory defined in the environment variable `EDGE_RUNTIME_DIR`.
+If this variable is unset or empty, the default runtime directory will be `/tmp/edge-cdn-store`
 
-All cached responses are stored in the directory `cache` immediately under `$RUNTIME_DIR`.
+All cached responses are stored in the directory `$EDGE_RUNTIME_DIR/cache`.
 
 ### Start server
 
@@ -20,10 +21,10 @@ All cached responses are stored in the directory `cache` immediately under `$RUN
 ./start.sh edge-cdn-store.yaml
 ```
 
-This starts three endpoints:
+This starts the Edge CDN Store proxy as a background task that make the following three endpoints available:
 
-* `http://localhost:6188` insecure proxy endpoint
-* `https://localhost:6143` TLS proxy endpoint
+* `http://localhost:6188` Insecure (HTTP) proxy endpoint
+* `https://localhost:6143` TLS (HTTPS) proxy endpoint
 * `http://localhost:8080` Proxy inspection
    - `http://localhost:8080/version` Edge CDN Cache version
    - `http://localhost:8080/health` Proxy health status
@@ -107,12 +108,12 @@ CACHE_SIZE_BYTES=$((1024 * 1024)); cargo run
 
 The CDN Edge Proxy can be configured using the following environment variables:
 
-| Environment Variable | Default Value                  | Description                                                                  |
-|----------------------|--------------------------------|------------------------------------------------------------------------------|
-| `CACHE_DIR`          | `./.cache`                     | The root directory for the disk cache<br>(relative to `$CARGO_MANIFEST_DIR`) |
-| `CACHE_SIZE_BYTES`   | `2 * 1024 * 1024 * 1024` (2Gb) | Default cache size                                                           |
-| `PROXY_HTTP_PORT`    | `6143`                         | Default port for HTTP connections                                            |
-| `PROXY_HTTPS_PORT`   | `6188`                         | Default port for HTTPS connections                                           |
+| Environment Variable | Default Value                  | Description                                   |
+|----------------------|--------------------------------|-----------------------------------------------|
+| `EDGE_RUNTIME_DIR`   | `/tmp/egde-sdn-store`          | Edge CDN Store runtime directory              |
+| `CACHE_SIZE_BYTES`   | `2 * 1024 * 1024 * 1024` (2Gb) | Cache size in bytes                           |
+| `PROXY_HTTP_PORT`    | `6143`                         | Port for HTTP connections                     |
+| `PROXY_HTTPS_PORT`   | `6188`                         | Port for HTTPS connections                    |
 
 ---
 
@@ -133,3 +134,16 @@ Unfortunately, this service binds to port 6188, which is also the default HTTPS 
 
 This means that if you have RustRover running at the same time as you start the cache server, the server might be unable to bind port 6188.
 If the Pingora Proxy is unsuccessful after a certain number of retries, it panics and gives up.
+
+## Development Notes on Running this Proxy as a Daemon
+
+[According to the documentation](https://github.com/cloudflare/pingora/blob/main/docs/user_guide/daemon.md), if you set `daemon: true` in `edge-cdn-store.yaml` file, then start the server with the argument `--conf ./edge-cdn-store.yaml`, the Pingora framework will fork the server process when `server.run_forever()` is encountered.
+
+Unfortunately, once running as a daemon, the software becomes very fragile (on macOS at least).
+
+I found when `upstream_peer()` in `pingora_proxy::ProxyHttp` calls `UpstreamPeer::new()`, the server would crash silently.
+
+I was also disappointed to discover that the `daemonize` crate in the Pingora framework has been marked as unmaintained: <https://github.com/cloudflare/pingora/issues/699>
+
+Consequently, I have abandoned the attempt to get this server to run as a daemon.
+It runs perfectly well as a background service.

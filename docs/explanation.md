@@ -52,16 +52,24 @@ The eviction policy used by the `EvictionManager` is defined at the time the cac
 In this demo, the "Least Recently Used" (LRU) policy has been chosen.
 
 ```rust
-static DEFAULT_CACHE_SIZE_BYTES: &'static usize = &(2 * 1024 * 1024 * 1024); // Default cache size = 2Gb
+pub const DEFAULT_CACHE_SIZE_BYTES: usize = 2 * 1024 * 1024 * 1024; // Default cache size = 2Gb
 
-pub struct EvictCfg {
-  pub max_bytes: usize,
+// Just use LRU at the moment
+pub struct EvictionManagerCfg {
+    pub max_bytes: usize,
 }
 
-pub static EVICT_CFG: Lazy<EvictCfg> = Lazy::new(|| EvictCfg {
-  max_bytes: env_var_or_num("CACHE_SIZE_BYTES", *DEFAULT_CACHE_SIZE_BYTES),
-});
-pub static EVICT: Lazy<&'static LruManager> = Lazy::new(|| Box::leak(Box::new(LruManager::new(EVICT_CFG.max_bytes))));
+static EVICTION_MANAGER_CFG: OnceLock<EvictionManagerCfg> = OnceLock::new();
+pub fn eviction_manager_cfg() -> &'static EvictionManagerCfg {
+    EVICTION_MANAGER_CFG.get_or_init(|| EvictionManagerCfg {
+        max_bytes: env_var_or_num("CACHE_SIZE_BYTES", DEFAULT_CACHE_SIZE_BYTES),
+    })
+}
+
+static EVICTION_MANAGER: OnceLock<LruManager> = OnceLock::new();
+pub fn eviction_manager() -> &'static LruManager {
+    EVICTION_MANAGER.get_or_init(|| LruManager::new(eviction_manager_cfg().max_bytes))
+}
 ```
 
 Where `LruManager` is an alias for `pingora_cache::eviction::simple_lru::Manager`.
@@ -73,10 +81,15 @@ This eviction policy is then applied to the selected cache when `pingora_proxy::
 The actual `DiskCache` object is declared as follows and acts as the primary cache.
 
 ```rust
-static DEFAULT_CACHE_DIR: &'static str = "./.cache";
+static CACHE_DIR: OnceLock<String> = OnceLock::new();
+pub fn cache_dir() -> &'static str {
+    CACHE_DIR.get_or_init(|| format!("{}/cache", runtime_dir()))
+}
 
-static DISK_CACHE: Lazy<&'static DiskCache> =
-    Lazy::new(|| Box::leak(Box::new(DiskCache::new(env_var_or_str("CACHE_DIR", DEFAULT_CACHE_DIR)))));
+static DISK_CACHE: OnceLock<DiskCache> = OnceLock::new();
+pub fn disk_cache() -> &'static DiskCache {
+    DISK_CACHE.get_or_init(|| DiskCache::new(cache_dir()))
+}
 ```
 
 An instance of the following struct is then created with the `primary` field set equal to the disk cache.
@@ -87,6 +100,18 @@ pub struct TieredStorage {
     primary: &'static (dyn Storage + Sync),
     secondary: Option<&'static (dyn Storage + Sync)>,
     write_policy: WritePolicy,
+}
+
+static TIERED: OnceLock<TieredStorage> = OnceLock::new();
+pub fn tiered_cache() -> &'static TieredStorage {
+    TIERED.get_or_init(|| {
+        TieredStorage::new(
+            disk_cache(),
+            None,
+            // Some(remote_cache()),  // Need to implement this
+            WritePolicy::PrimaryOnly, // Switches to WriteThroughBoth when remote is available
+        )
+    })
 }
 ```
 

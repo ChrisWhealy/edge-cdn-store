@@ -1,4 +1,4 @@
-use crate::utils::{impl_trace, trace_fn_exit_with_err, Trace};
+use crate::logger::{impl_trace, trace_fn_exit_with_err, Trace};
 
 use async_trait::async_trait;
 use bytes::Bytes;
@@ -34,7 +34,7 @@ impl HandleHit for DiskHitHandler {
         // Deferred seek?
         if self.pending_seek {
             if let Err(e) = self.file.seek(SeekFrom::Start(self.range_start)).await {
-                return trace_fn_exit_with_err(fn_name, &format!("seek failed: {e}"), false);
+                return trace_fn_exit_with_err(fn_name, &format!("seek failed: {e}"), None, false);
             }
 
             self.pos = self.range_start;
@@ -50,7 +50,7 @@ impl HandleHit for DiskHitHandler {
         let mut buf = vec![0u8; to_read];
         let n = match self.file.read(&mut buf).await {
             Ok(n) => n,
-            Err(e) => return trace_fn_exit_with_err(fn_name, &format!("read of cache file failed: {e}"), false),
+            Err(e) => return trace_fn_exit_with_err(fn_name, &format!("read of cache file failed: {e}"), None, false),
         };
 
         // Have we hit EOF?
@@ -96,6 +96,7 @@ impl HandleHit for DiskHitHandler {
                 return trace_fn_exit_with_err(
                     fn_name,
                     &format!("seek end > length: {end} > {}", self.total_len),
+                    None,
                     false,
                 );
             }
@@ -106,7 +107,7 @@ impl HandleHit for DiskHitHandler {
         };
 
         if start as u64 > end {
-            return trace_fn_exit_with_err(fn_name, &format!("seek start > end: {start} > {end}"), false);
+            return trace_fn_exit_with_err(fn_name, &format!("seek start > end: {start} > {end}"), None, false);
         }
 
         self.range_start = start as u64;

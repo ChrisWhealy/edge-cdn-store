@@ -67,7 +67,7 @@ pub fn start_disk_cache_inspector(addr: std::net::SocketAddr, cache: Arc<&'stati
     let routes = build_inspector_routes(cache);
 
     let th = std::thread::Builder::new()
-        .name("disk-cache-inspector".into())
+        .name("disk cache inspector".into())
         .spawn(move || {
             let rt = tokio::runtime::Builder::new_current_thread()
                 .enable_all()

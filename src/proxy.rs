@@ -1,9 +1,10 @@
 use crate::{
     consts::{DEFAULT_PORT_HTTP, DEFAULT_PORT_HTTPS, HTTP, HTTPS, ONE_HOUR},
     disk_cache::eviction_manager,
+    logger::{impl_trace, trace_fn_exit, trace_fn_exit_with_err, Trace},
     statics::LOCALHOST,
     tiered::tiered_cache,
-    utils::{impl_trace, parse_host_authority, scheme_from_hdr, trace_fn_exit, trace_fn_exit_with_err, Trace},
+    utils::{parse_host_authority, scheme_from_hdr},
 };
 
 use async_trait::async_trait;
@@ -13,7 +14,7 @@ use pingora::{
 };
 use pingora_cache::{storage::HandleHit, CacheKey, CacheMeta, ForcedInvalidationKind, NoCacheReason, RespCacheable};
 use pingora_core::prelude::HttpPeer;
-use pingora_error::{Error, ErrorType};
+use pingora_error::ErrorType;
 use std::time::SystemTime;
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
@@ -61,18 +62,17 @@ impl ProxyHttp for EdgeCdnProxy {
 
         // Retrieve Host header
         let host_hdr = match session.req_header().headers.get("Host").and_then(|h| h.to_str().ok()) {
-            Some(h) => h,
+            Some(h) => h.trim(),
             None => {
-                <Self as Trace>::fn_exit(fn_name);
-                return Error::e_explain(ErrorType::ConnectError, "Host header missing from request");
+                let err_msg = "Host header missing from request";
+                return trace_fn_exit_with_err(fn_name, err_msg, Some(ErrorType::ConnectError), false);
             },
         };
 
         let (host_only, port_from_host) = match parse_host_authority(host_hdr) {
             Ok(host_and_port) => host_and_port,
             Err(ha_err) => {
-                trace_fn_exit(fn_name, &ha_err.to_string(), false);
-                return Err(ha_err);
+                return trace_fn_exit_with_err(fn_name, &ha_err.to_string(), None, false);
             },
         };
 
@@ -87,15 +87,10 @@ impl ProxyHttp for EdgeCdnProxy {
         let port = port_from_host.unwrap_or(if use_https { DEFAULT_PORT_HTTPS } else { DEFAULT_PORT_HTTP });
         let sni = if use_https { host_only.clone() } else { String::new() };
 
-        tracing::debug!(
-            "     origin: {}:{} tls={} sni={}",
-            host_only,
-            port,
-            use_https,
-            if use_https { &sni } else { "\"\"" }
-        );
+        tracing::debug!("     origin: {}:{} tls={} sni={}", host_only, port, use_https, sni);
 
         let peer = HttpPeer::new((host_only, port), use_https, sni);
+
         <Self as Trace>::fn_exit(fn_name);
         Ok(Box::new(peer))
     }
@@ -136,7 +131,7 @@ impl ProxyHttp for EdgeCdnProxy {
             .unwrap_or_default();
         let (host_only, _port_opt) = match parse_host_authority(host_hdr) {
             Ok((host_only, port_opt)) => (host_only, port_opt),
-            Err(parse_err) => return trace_fn_exit_with_err(fn_name, &parse_err.to_string(), false),
+            Err(parse_err) => return trace_fn_exit_with_err(fn_name, &parse_err.to_string(), None,false),
         };
         let host_lc = host_only.to_ascii_lowercase();
         let hdr_scheme = scheme_from_hdr(session);

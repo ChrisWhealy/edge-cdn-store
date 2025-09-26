@@ -11,7 +11,7 @@ CONF_SRC="${1:-conf.yaml}"
 
 if [[ ! -f "$CONF_SRC" ]]; then
   echo "⚠️   Config file not found: $CONF_SRC"
-  echo "    Pass a path explicitly: ./start.sh path/to/conf.yaml"
+  echo "    Usage: ./start.sh path/to/conf.yaml"
 else
   cargo build --release
   export RUST_LOG=edge_cdn_store=debug,pingora=info
@@ -24,7 +24,10 @@ else
   cp "$PWD"/keys/server.* "$RUNTIME_DIR/keys/"
   cp "$CONF_SRC" "$RUNTIME_DIR/conf.yaml"
 
-  "$(pwd)/target/release/edge-cdn-store" --conf "$RUNTIME_DIR/conf.yaml" &
-  echo "$!" > "$RUNTIME_DIR/server.pid"
-  echo "✅  Proxy server started"
+  "$PWD"/target/release/edge-cdn-store --conf "$RUNTIME_DIR/conf.yaml" &
+  PID="$!"
+
+  # This file is created automatically when running with daemon: true
+  echo $PID > "$RUNTIME_DIR/server.pid"
+  echo "✅  Proxy server started.  PID = $PID"
 fi

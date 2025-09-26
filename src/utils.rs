@@ -6,32 +6,7 @@ use pingora_cache::{
 use pingora_error::{Error, ErrorType};
 use std::{fmt::Write, str::FromStr};
 
-// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-pub trait Trace {
-    fn struct_name() -> &'static str;
-    fn fn_enter(fn_name: &str) {
-        tracing::debug!("---> {}::{fn_name}()", Self::struct_name())
-    }
-    fn fn_enter_exit(fn_name: &str) {
-        tracing::debug!("<--> {}::{fn_name}()", Self::struct_name())
-    }
-    fn fn_exit(fn_name: &str) {
-        tracing::debug!("<--- {}::{fn_name}()", Self::struct_name())
-    }
-}
-
-macro_rules! impl_trace {
-    ($name:ident $(<$($gen:tt),* $(,)? >)? $(where $($whr:tt)*)? ) => {
-        impl $(<$($gen),*>)? Trace for $name $(<$($gen),*>)? $(where $($whr)*)? {
-            fn struct_name() -> &'static str {
-                stringify!($name)
-            }
-        }
-    };
-}
-
 use crate::consts::HEX_CHARS;
-pub(crate) use impl_trace;
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 // Returns an environment variable or falls back to the default
@@ -113,28 +88,6 @@ pub fn html_escape(s: &str) -> String {
     s.replace('&', "&amp;").replace('<', "&lt;").replace('>', "&gt;")
 }
 
-// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-// Development helper functions
-pub fn trace_fn_exit(fn_name: &str, err_msg: &str, trace_fn_enter: bool) {
-    if trace_fn_enter {
-        tracing::debug!("---> {fn_name}");
-    }
-    tracing::debug!("     {err_msg}");
-    tracing::debug!("<--- {fn_name}");
-}
-
-pub fn trace_fn_exit_with_err<E>(fn_name: &str, err_msg: &str, trace_fn_enter: bool) -> pingora_error::Result<E> {
-    trace_fn_exit(fn_name, err_msg, trace_fn_enter);
-    Error::e_explain(ErrorType::InternalError, err_msg.to_string())
-}
-
-// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-pub fn display_opt_str(opt_str: &Option<&str>) -> String {
-    match opt_str {
-        Some(s) if !s.is_empty() => s.to_string(),
-        _ => "\"\"".to_string(),
-    }
-}
 
 pub fn hex2str(hex: &[u8; 16]) -> String {
     let mut s = String::with_capacity(hex.len() * 2);
@@ -144,6 +97,15 @@ pub fn hex2str(hex: &[u8; 16]) -> String {
         s.push(HEX_CHARS[(byte & 0xf) as usize] as char);
     }
     s
+}
+
+
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+pub fn display_opt_str(opt_str: &Option<&str>) -> String {
+    match opt_str {
+        Some(s) if !s.is_empty() => s.to_string(),
+        _ => "\"\"".to_string(),
+    }
 }
 
 #[allow(dead_code)]

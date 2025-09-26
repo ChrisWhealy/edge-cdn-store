@@ -1,71 +1,65 @@
 mod consts;
 mod disk_cache;
+mod inspector;
+mod logger;
 mod metrics;
 mod proxy;
 mod statics;
 mod tiered;
 mod utils;
-pub mod inspector;
 
 use crate::{
     consts::{DEFAULT_PROXY_PORT_HTTP, DEFAULT_PROXY_PORT_HTTPS},
-    disk_cache::{
-        cache_statistics::PersistCacheOnShutdown, disk_cache, eviction_manager_cfg,
-    },
+    disk_cache::{cache_statistics::PersistCacheOnShutdown, disk_cache, eviction_manager_cfg},
+    inspector::{start_disk_cache_inspector, StopInspectorOnShutdown},
+    logger::BackgroundLogger,
     proxy::EdgeCdnProxy,
     statics::*,
     utils::env_var_or_num,
 };
 
 use pingora::prelude::*;
-use std::error::Error;
-use std::fs::OpenOptions;
-use std::sync::Arc;
-use tracing_appender::non_blocking::NonBlocking;
-use tracing_subscriber::EnvFilter;
-use inspector::start_disk_cache_inspector;
-use inspector::StopInspectorOnShutdown;
+use pingora_core::server::{configuration::Opt, Server};
+use std::{error::Error, fs::OpenOptions, sync::Arc};
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 fn main() -> Result<(), Box<dyn Error>> {
-    // Logging needs to be fork-safe
-    let log_file = OpenOptions::new()
-        .create(true)
-        .append(true)
-        .open(path_to_app_log())
-        .expect("open app.log");
-    let (nb, _guard): (NonBlocking, _) = tracing_appender::non_blocking(log_file);
-
-    tracing_subscriber::fmt()
-        .with_env_filter(EnvFilter::from_default_env())
-        .with_writer(nb)
-        .init();
-
-    // Trap panic output whilst running as a daemonized/background task
+    // Ensure panic output is trapped
     std::panic::set_hook(Box::new(|info| {
         use std::io::Write;
-        if let Ok(mut f) = std::fs::OpenOptions::new().create(true).append(true).open(path_to_panic_log()) {
+
+        if let Ok(mut f) = OpenOptions::new().create(true).append(true).open(path_to_panic_log()) {
             let _ = writeln!(f, "PANIC: {info}");
-            let _ = writeln!(f, "Backtrace: {:?}", std::backtrace::Backtrace::capture());
+            let _ = writeln!(f, "Backtrace: {:?}", std::backtrace::Backtrace::force_capture());
         }
     }));
 
-    let proxy_http_port: u16 = env_var_or_num("PROXY_HTTP_PORT", DEFAULT_PROXY_PORT_HTTP);
-    let proxy_https_port: u16 = env_var_or_num("PROXY_HTTPS_PORT", DEFAULT_PROXY_PORT_HTTPS);
-
-    let cert_path = format!("{}/server.crt", server_keys_dir());
-    let key_path = format!("{}/server.pem", server_keys_dir());
-
-    let mut server = Server::new(None)?;
+    // Create a Pingora server based on command line options
+    let mut server = Server::new(Some(Opt::parse_args()))?;
     server.bootstrap();
 
-    let proxy = EdgeCdnProxy::new(proxy_http_port, proxy_https_port);
-    let mut service = http_proxy_service(&server.configuration, proxy);
+    // Enable background logging
+    let logger = background_service(
+        "background logger",
+        BackgroundLogger {
+            path: path_to_app_log().into(),
+            // filter: None,
+            // Debug switched on for development purposes
+            filter: Some("edge_cdn_store=debug,pingora=info".into()),
+        },
+    );
+    server.add_service(logger);
+
+    let proxy_http_port: u16 = env_var_or_num("PROXY_HTTP_PORT", DEFAULT_PROXY_PORT_HTTP);
+    let proxy_https_port: u16 = env_var_or_num("PROXY_HTTPS_PORT", DEFAULT_PROXY_PORT_HTTPS);
+    let mut service = http_proxy_service(&server.configuration, EdgeCdnProxy::new(proxy_http_port, proxy_https_port));
 
     service.add_tcp(&format!("{IN_ADDR_ANY}:{proxy_http_port}"));
-    service
-        .add_tls(&format!("{IN_ADDR_ANY}:{proxy_https_port}"), &cert_path, &key_path)
-        .unwrap();
+    service.add_tls(
+        &format!("{IN_ADDR_ANY}:{proxy_https_port}"),
+        &format!("{}/server.crt", server_keys_dir()),
+        &format!("{}/server.pem", server_keys_dir()),
+    )?;
     server.add_service(service);
 
     let persist_cache_svc = background_service(
@@ -91,5 +85,6 @@ fn main() -> Result<(), Box<dyn Error>> {
     tracing::info!("    HTTPS proxy listening on {IN_ADDR_ANY}:{}...", proxy_https_port);
 
     // Run until a SIGINT/SIGTERM/SIGQUIT is received
+    // Only SIGTERM and SIGQUIT will trigger a graceful shutdown
     server.run_forever();
 }

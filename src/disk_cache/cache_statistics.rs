@@ -2,7 +2,7 @@ use crate::{
     consts::CACHE_STATE_FILENAME,
     disk_cache::DiskCache,
     eviction_manager_cfg,
-    utils::{impl_trace, Trace},
+    logger::{impl_trace, Trace},
 };
 
 use async_trait::async_trait;

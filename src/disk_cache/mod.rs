@@ -5,9 +5,10 @@ mod handle_miss;
 use crate::{
     consts::{DEFAULT_CACHE_SIZE_BYTES, DEFAULT_READ_BUFFER_SIZE},
     disk_cache::{cache_statistics::fetch_cache_state, handle_hit::DiskHitHandler, handle_miss::DiskMissHandler},
+    logger::{impl_trace, trace_fn_exit_with_err, Trace},
     metrics::CacheMetrics,
     statics::cache_dir,
-    utils::{env_var_or_num, env_var_or_str, format_cache_key, impl_trace, trace_fn_exit_with_err, Trace},
+    utils::{env_var_or_num, env_var_or_str, format_cache_key},
 };
 
 use async_trait::async_trait;
@@ -27,10 +28,10 @@ use std::{
 use tokio::{fs, fs::File, join};
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-// Define cache and eviction policy
+// Define disk cache and eviction policy
 static DISK_CACHE: OnceLock<DiskCache> = OnceLock::new();
 pub fn disk_cache() -> &'static DiskCache {
-    DISK_CACHE.get_or_init(|| DiskCache::new(env_var_or_str("CACHE_DIR", cache_dir())))
+    DISK_CACHE.get_or_init(|| DiskCache::new(cache_dir()))
 }
 
 // Just use LRU at the moment
@@ -129,6 +130,7 @@ impl Storage for DiskCache {
             return trace_fn_exit_with_err(
                 fn_name,
                 &format!("Unable to create disk cache directory {}: {}", self.root.display(), e),
+                None,
                 false,
             );
         };
@@ -152,6 +154,7 @@ impl Storage for DiskCache {
                         return trace_fn_exit_with_err(
                             fn_name,
                             &format!("unable to determine file size for cached entry {}: {e}", body_path.display()),
+                            None,
                             false,
                         );
                     },
@@ -278,12 +281,12 @@ impl Storage for DiskCache {
 
             tracing::debug!("     updating meta");
             if let Err(e) = fs::write(&meta_path, &meta_internal).await {
-                return trace_fn_exit_with_err(fn_name, &format!("failed to update meta: {e}"), false);
+                return trace_fn_exit_with_err(fn_name, &format!("failed to update meta: {e}"), None, false);
             }
 
             tracing::debug!("     updating hdr");
             if let Err(e) = fs::write(&hdr_path, &meta_header).await {
-                return trace_fn_exit_with_err(fn_name, &format!("failed to update hdr: {e}"), false);
+                return trace_fn_exit_with_err(fn_name, &format!("failed to update hdr: {e}"), None, false);
             }
 
             true
