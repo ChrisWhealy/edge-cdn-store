@@ -78,7 +78,7 @@ fn main() -> Result<(), Box<dyn Error>> {
     server.add_service(stop_inspector_svc);
 
     tracing::info!(
-        "Pingora proxies starting with cache size {} bytes",
+        "Edge CDN proxy started: Cache size = {} bytes",
         eviction_manager_cfg().max_bytes
     );
     tracing::info!("    HTTP  proxy listening on {IN_ADDR_ANY}:{}...", proxy_http_port);
