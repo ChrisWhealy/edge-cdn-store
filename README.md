@@ -145,23 +145,14 @@ This has several important consequences for the software architecture:
 * Any other processes or Tokio runtimes created prior to the fork are shut down. 
    This means the cache inspector must run as a Pingora background service rather than a `warp` server running in its own runtime.
 * Any file descriptors opened before the fork are closed and are therefore no longer available to the server.
-   This includes any file descriptors for `stdin` and `stdout`.
+   This includes any file descriptors for `stdout` and `stderr`.
    Consequently, the logger must direct all its output to a file that is opened after the fork happens.
+* After the fork, if the logger tries to write to `stdout` and `stderr`, the server crashes silently.
 * Trapping panics must be done by defining an explicit panic handler in `std::panic::set_hook()`
 * Trapping errors is trickier as not all runtime errors can be caught with `std::panic::catch_unwind()`
 
-Unfortunately, once running as a daemon (on macOS at least), the software became very fragile and would crash silently.
-For example, in `pingora_proxy::ProxyHttp::upstream_peer()` calls `UpstreamPeer::new()`, the server would crash silently.
-
-If you look at the implementation of `HttpPeer::new()`, there is an unchecked `unwrap()` statement with a TODO comment simply saying "handle error".
-
-```rust
-pub fn new<A: ToInetSocketAddrs>(address: A, tls: bool, sni: String) -> Self {
-    let mut addrs_iter = address.to_socket_addrs().unwrap(); //TODO: handle error
-    let addr = addrs_iter.next().unwrap();
-    Self::new_from_sockaddr(SocketAddr::Inet(addr), tls, sni)
-}
-```
+Unfortunately, once running as a daemon (on macOS at least), the software became very fragile and would crash often silently.
+For example, in `pingora_proxy::ProxyHttp::upstream_peer()`, the call to `UpstreamPeer::new()` would crash the server.
 
 I was further disappointed to discover that the `daemonize` crate in the Pingora framework has been marked as unmaintained: <https://github.com/cloudflare/pingora/issues/699>
 
