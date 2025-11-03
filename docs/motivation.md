@@ -18,17 +18,15 @@ So in the case of our user in Singapore, if their requests are routed through se
 
 Software that implements this "edge-cache" functionality is part of the wider category of software forming what is called a Content Delivery Network (CDN).
 
-Wasmer Edge is the name of Wasmer's CDN offering and this proposal aims to extend its functionality by adding edge-caching capability.
-
 ## Impact
 
 From a technical perspective, to implement a correct, scalable and robust cache layer from scratch is a highly complex task requiring both specialist skills and an extended period of development time.
-Consequently, it makes sense for Wasmer to use an Open Source Rust framework delivered by a company specialising in CDN software as they have expertise to perform the technical "heavy lifting".
+Consequently, it makes sense to use an Open Source Rust framework delivered by a company specialising in CDN software as they have expertise to perform the technical "heavy lifting".
 
 Cloudflare's Rust-based Pingora framework is a candidate here; specifically, the `pingora-proxy` and `pingora-cache` crates.
 
-From a product perspective however, even after an edge-cache has been built using this software, this may only bring Wasmer up to basic parity with other CDN offerings.
-In order to make the Wasmer Edge product stand out, further usability features will be needed that could include:
+From a product perspective however, even after an edge-cache has been built using this software, this may only achieve parity with other CDN offerings.
+In order to make this product stand out, further usability features will be needed that could include:
 * A dashboard that allows admin tasks to be performed such as monitoring cache performance and manual cache purges etc
 * Perform the same tasks as above but programmatically via an API
 * Other features I haven't thought of yet
